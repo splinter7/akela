@@ -1,0 +1,31 @@
+{
+  "name": "analytics-tracker",
+  "version": "0.1.0",
+  "description": "Browser analytics event verification via Playwright journeys",
+  "type": "module",
+  "bin": {
+    "analytics-tracker": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "track": "tsx src/cli/index.ts",
+    "demo": "tsx src/cli/demo-server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ci": "vitest run && tsc"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0",
+    "yaml": "^2.6.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

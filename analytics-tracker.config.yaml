@@ -1,0 +1,9 @@
+# Default config for Analytics Tracker
+baseUrl: http://127.0.0.1:4173
+headless: true
+reportDir: reports
+snowplow:
+  collectorPatterns:
+    - "/i"
+    - "/com.snowplowanalytics.snowplow/tp2"
+    - "/snowplow/"

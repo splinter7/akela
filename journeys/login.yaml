@@ -1,0 +1,68 @@
+# Service Pro password login — writes Playwright storageState for other journeys.
+#
+# Flow (main app Login):
+#   /login → email → /login/options → password → /service-pro/**
+#
+# Usage (example track CLI):
+#   npm run track -- auth journeys/login.yaml \
+#     --var AUTH_EMAIL=you@example.com \
+#     --var AUTH_PASSWORD=secret
+#
+# Then point tracking journeys at:
+#   storageState: .auth/storage-state.json
+#
+# SigTrace equivalent: config/auth/service-pro.yaml (setup.auth: service-pro).
+# Credentials: AUTH_EMAIL / AUTH_PASSWORD — never commit secrets.
+#
+# Notes:
+# - Use a Service Pro account (not consumer).
+# - On Cookiebot domains you may need to accept cookies before the form is usable
+#   (#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll), or set cookiesAccepted=true.
+# - baseUrl defaults to local; override for staging (e.g. https://master.staging.werkspot.nl).
+
+name: login-service-pro
+baseUrl: http://localhost:3000
+adapters:
+  - snowplow
+expect: []
+steps:
+  - action: goto
+    path: /login
+
+  - action: waitForSelector
+    selector: "[data-testid=email]"
+    timeoutMs: 15000
+
+  - action: fill
+    selector: "[data-testid=email]"
+    value: "${AUTH_EMAIL}"
+
+  - action: click
+    selector: "[data-testid=submit]"
+
+  # Login options: OTP email / OTP SMS / password
+  - action: waitForSelector
+    selector: "[data-testid=enter-password-option]"
+    timeoutMs: 15000
+
+  - action: click
+    selector: "[data-testid=enter-password-option]"
+
+  - action: waitForSelector
+    selector: "[data-testid=password]"
+    timeoutMs: 15000
+
+  - action: fill
+    selector: "[data-testid=password]"
+    value: "${AUTH_PASSWORD}"
+
+  - action: click
+    selector: "[data-testid=submit]"
+
+  # Successful SP login lands under /service-pro/**
+  - action: waitForURL
+    url: "**/service-pro/**"
+    timeoutMs: 30000
+
+  - action: saveStorageState
+    path: .auth/storage-state.json

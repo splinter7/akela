@@ -1,0 +1,27 @@
+# Example auth journey — copy and fill real selectors for your site.
+# Usage:
+#   npm run track -- auth journeys/login.example.yaml \
+#     --var AUTH_EMAIL=you@example.com \
+#     --var AUTH_PASSWORD=secret
+# Then point tracking journeys at the written storageState path.
+
+name: login-example
+baseUrl: https://staging.example.com
+adapters:
+  - snowplow
+expect: []
+steps:
+  - action: goto
+    path: /login
+  - action: fill
+    selector: "#TODO-email"
+    value: "${AUTH_EMAIL}"
+  - action: fill
+    selector: "#TODO-password"
+    value: "${AUTH_PASSWORD}"
+  - action: click
+    selector: "#TODO-login-submit"
+  - action: waitForSelector
+    selector: "#TODO-logged-in-marker"
+  - action: saveStorageState
+    path: .auth/storage-state.json

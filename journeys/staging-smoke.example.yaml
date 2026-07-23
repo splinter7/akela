@@ -1,0 +1,34 @@
+name: staging-smoke
+# Copy to journeys/staging-smoke.yaml and customize.
+# Do not commit real credentials. Create storage state once, keep it local.
+
+baseUrl: https://staging.example.com
+storageState: .auth/storage-state.json
+gotoWaitUntil: domcontentloaded
+options:
+  ordered: false
+  match: partial
+  forbidExtra: false
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /
+  - action: waitForSelector
+    selector: body
+    timeoutMs: 10000
+  # - action: waitForURL
+  #   url: "**/dashboard**"
+  # - action: scroll
+  #   selector: "#feed"
+  # - action: click
+  #   selector: "#TODO-primary-cta"
+  # - action: waitForEvent
+  #   eventName: your_event
+  #   timeoutMs: 8000
+expect:
+  - eventName: your_event
+#   properties:
+#     page: home
+#   fields:
+#     user_id: "example"

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Analytics Tracker Demo</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3d9cfd;
+      --ok: #3ecf8e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, #1e3a5f 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, #1a3d2e 0%, transparent 50%),
+        var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+    }
+    main {
+      width: min(520px, 100%);
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border: 1px solid #2a3548;
+      padding: 2rem;
+    }
+    h1 {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-weight: 600;
+      font-size: 1.75rem;
+      margin: 0 0 0.35rem;
+      letter-spacing: -0.02em;
+    }
+    p { color: var(--muted); margin: 0 0 1.5rem; line-height: 1.5; }
+    .actions { display: flex; flex-direction: column; gap: 0.75rem; }
+    button {
+      font: inherit;
+      padding: 0.85rem 1rem;
+      border: 1px solid #3a4a63;
+      background: #243044;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    button:hover { border-color: var(--accent); background: #2a3a52; }
+    button:active { transform: translateY(1px); }
+    #scroll-region {
+      margin-top: 1.5rem;
+      max-height: 120px;
+      overflow: auto;
+      border: 1px solid #2a3548;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    #scroll-spacer { height: 400px; }
+    #log {
+      margin-top: 1.5rem;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--ok);
+      min-height: 3rem;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Analytics Tracker</h1>
+    <p>Demo page that fires Snowplow-like collector beacons for local verification.</p>
+    <div class="actions">
+      <button type="button" id="track-page-view">Fire page_view (GET)</button>
+      <button type="button" id="track-cta">Fire cta_click (POST)</button>
+      <button type="button" id="cta">Visible CTA (also fires cta_click)</button>
+    </div>
+    <div id="scroll-region">
+      <p>Scroll this region to fire <code>list_scrolled</code>.</p>
+      <div id="scroll-spacer">Tall content for scrolling…</div>
+      <p id="scroll-end">End of list</p>
+    </div>
+    <div id="log"></div>
+  </main>
+  <script>
+    const logEl = document.getElementById("log");
+    function log(msg) {
+      logEl.textContent += msg + "\n";
+    }
+
+    function fireGetPageView() {
+      const params = new URLSearchParams({
+        e: "pv",
+        page: "home",
+        url: location.href,
+        aid: "demo-app",
+        dtm: String(Date.now()),
+      });
+      const url = "/snowplow/i?" + params.toString();
+      fetch(url, { method: "GET", keepalive: true }).then(() => log("GET page_view sent"));
+    }
+
+    function firePostCta() {
+      const ue = {
+        schema: "iglu:com.example/cta_click/jsonschema/1-0-0",
+        data: {
+          event_name: "cta_click",
+          button_id: "cta",
+          page: "home",
+        },
+      };
+      const ue_px = btoa(JSON.stringify(ue));
+      const body = {
+        schema: "iglu:com.snowplowanalytics.snowplow/payload_data/jsonschema/1-0-4",
+        data: [
+          {
+            e: "ue",
+            ue_px,
+            aid: "demo-app",
+            dtm: String(Date.now()),
+          },
+        ],
+      };
+      fetch("/snowplow/com.snowplowanalytics.snowplow/tp2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive: true,
+      }).then(() => log("POST cta_click sent"));
+    }
+
+    function fireListScrolled() {
+      const ue = {
+        schema: "iglu:com.example/list_scrolled/jsonschema/1-0-0",
+        data: {
+          event_name: "list_scrolled",
+          element: "demo_list",
+          page: "home",
+        },
+      };
+      const ue_px = btoa(JSON.stringify(ue));
+      const body = {
+        schema: "iglu:com.snowplowanalytics.snowplow/payload_data/jsonschema/1-0-4",
+        data: [
+          {
+            e: "ue",
+            ue_px,
+            aid: "demo-app",
+            dtm: String(Date.now()),
+          },
+        ],
+      };
+      fetch("/snowplow/com.snowplowanalytics.snowplow/tp2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive: true,
+      }).then(() => log("POST list_scrolled sent"));
+    }
+
+    let scrollFired = false;
+    document.getElementById("scroll-region").addEventListener("scroll", () => {
+      if (scrollFired) return;
+      scrollFired = true;
+      fireListScrolled();
+    });
+
+    document.getElementById("track-page-view").addEventListener("click", fireGetPageView);
+    document.getElementById("track-cta").addEventListener("click", firePostCta);
+    document.getElementById("cta").addEventListener("click", firePostCta);
+
+    // Auto page_view on load so a simple goto journey can assert it
+    fireGetPageView();
+  </script>
+</body>
+</html>

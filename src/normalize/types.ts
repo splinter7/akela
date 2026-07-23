@@ -133,6 +133,10 @@ export type AppConfig = {
   snowplow?: {
     collectorPatterns?: string[];
   };
+  /** Optional recorder preferences (additive; ignored by run/auth). */
+  record?: {
+    selectorPrefer?: ("data-analytics-id" | "data-testid")[];
+  };
 };
 
 /** Options passed into step execution from the runner. */

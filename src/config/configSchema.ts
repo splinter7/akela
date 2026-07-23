@@ -7,6 +7,8 @@ const gotoWaitUntilSchema = z.enum([
   "commit",
 ]);
 
+const selectorPreferSchema = z.enum(["data-analytics-id", "data-testid"]);
+
 export const appConfigSchema = z
   .object({
     baseUrl: z.string().min(1).optional(),
@@ -19,6 +21,11 @@ export const appConfigSchema = z
     snowplow: z
       .object({
         collectorPatterns: z.array(z.string().min(1)).optional(),
+      })
+      .optional(),
+    record: z
+      .object({
+        selectorPrefer: z.array(selectorPreferSchema).optional(),
       })
       .optional(),
   })

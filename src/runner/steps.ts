@@ -193,7 +193,28 @@ export async function executeStep(
       if (step.selector) {
         const locator = page.locator(step.selector);
         await locator.waitFor({ state: "attached", timeout });
-        await locator.scrollIntoViewIfNeeded({ timeout });
+        // Prefer scrolling inside overflow containers (recorded scroll targets);
+        // otherwise bring the element into the viewport.
+        const scrolledInside = await locator.evaluate((el) => {
+          const style = window.getComputedStyle(el);
+          const canY =
+            (style.overflowY === "auto" ||
+              style.overflowY === "scroll" ||
+              style.overflowY === "overlay") &&
+            el.scrollHeight > el.clientHeight + 1;
+          const canX =
+            (style.overflowX === "auto" ||
+              style.overflowX === "scroll" ||
+              style.overflowX === "overlay") &&
+            el.scrollWidth > el.clientWidth + 1;
+          if (!canY && !canX) return false;
+          if (canY) el.scrollTop = el.scrollHeight;
+          if (canX) el.scrollLeft = el.scrollWidth;
+          return true;
+        });
+        if (!scrolledInside) {
+          await locator.scrollIntoViewIfNeeded({ timeout });
+        }
       } else {
         await page.evaluate(() => {
           window.scrollBy(0, document.body.scrollHeight);

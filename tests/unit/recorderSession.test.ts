@@ -11,6 +11,11 @@ const FIXTURE_HTML = `<!DOCTYPE html>
   <button class="orphan-btn">Fragile</button>
   <label>Email <input id="email" name="email" type="text" /></label>
   <label>Password <input id="secret" name="password" type="password" /></label>
+  <div id="scroll-region" style="max-height:80px;overflow:auto;border:1px solid #000">
+    <div style="height:400px">Tall content</div>
+    <p id="scroll-end">End of list</p>
+  </div>
+  <div style="height:1200px">Page spacer for window scroll</div>
 </body>
 </html>`;
 
@@ -96,6 +101,59 @@ describe("RecorderSession", () => {
     expect(result.fragileCount).toBeGreaterThanOrEqual(1);
     expect(result.actionTimestamps).toHaveLength(result.steps.length);
     expect(result.events).toEqual([]);
+  }, 60_000);
+
+  it("records scroll on a scrollable region and page scroll without a selector", async () => {
+    const session = new RecorderSession({
+      startUrl,
+      adapters: ["snowplow"],
+      config: config(),
+      headless: true,
+    });
+
+    await session.start();
+    const page = session.getPage();
+
+    await page.locator("#scroll-region").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    // Debounce window so a burst collapses to one recorded scroll.
+    await page.waitForTimeout(400);
+
+    await page.evaluate(() => {
+      window.scrollBy(0, 600);
+    });
+    await page.waitForTimeout(400);
+
+    const result = await session.stop();
+
+    expect(result.steps).toContainEqual({
+      action: "scroll",
+      selector: "#scroll-region",
+    });
+    expect(result.steps).toContainEqual({ action: "scroll" });
+  }, 60_000);
+
+  it("does not record a page scroll when only a region scrolls", async () => {
+    const session = new RecorderSession({
+      startUrl,
+      adapters: ["snowplow"],
+      config: config(),
+      headless: true,
+    });
+
+    await session.start();
+    const page = session.getPage();
+
+    await page.locator("#scroll-region").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.waitForTimeout(400);
+
+    const result = await session.stop();
+    const scrolls = result.steps.filter((s) => s.action === "scroll");
+
+    expect(scrolls).toEqual([{ action: "scroll", selector: "#scroll-region" }]);
   }, 60_000);
 
   it("warns when recording password-like fills but still records the value", async () => {

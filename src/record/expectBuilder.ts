@@ -8,13 +8,19 @@ import type { PlanCoverage } from "./planCoverage.js";
 
 const DEFAULT_NOISE_EVENT_NAMES = ["page_ping"];
 const DEFAULT_CHURN_KEYS = ["timestamp", "eid", "dtm"];
-/** Allow action timestamps recorded slightly after beacon dtm (async binding). */
+/** How far before an event a user action may still be considered causal. */
 const ACTION_TIMESTAMP_SLACK_MS = 1000;
+/**
+ * How far after an event a user action may still be considered causal
+ * (async binding + scroll debounce). Keep tighter than pre-event slack so a
+ * later unrelated click does not steal waits from goto/page_view.
+ */
+const ACTION_TIMESTAMP_POST_SLACK_MS = 400;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const USER_ACTION_NAMES = new Set(["goto", "click", "fill"]);
+const USER_ACTION_NAMES = new Set(["goto", "click", "fill", "scroll"]);
 
 function isUuidLike(value: unknown): boolean {
   return typeof value === "string" && UUID_RE.test(value);
@@ -208,9 +214,9 @@ function parseEventTimeMs(timestamp: string | undefined): number | undefined {
 
 /**
  * Best-effort: insert `waitForEvent` after the user-action step whose
- * `actionTimestamps` entry most recently precedes each matched event
- * (with slack so async recorder binding timestamps slightly after beacon
- * `dtm` still attach to the causing click).
+ * `actionTimestamps` entry is the latest within slack of each matched event
+ * (so a debounced scroll after a click still wins; also covers async recorder
+ * binding timestamps slightly after beacon `dtm`).
  * When event timestamps are present but no user action is within range,
  * that wait is skipped. When event timestamps are missing, fall back to
  * match order ↔ action index.
@@ -233,24 +239,27 @@ export function suggestWaitForEventSteps(
     let afterStepIndex: number | undefined;
 
     if (eventMs !== undefined && userActionIndexes.length > 0) {
-      // Prefer the user action closest to the event within slack (covers
-      // async binding where pushAction lands slightly after beacon dtm).
+      // Prefer the *latest* user action in
+      // [event - preSlack, event + postSlack]. Latest-in-window beats
+      // closest-in-window so a debounced scroll after a click still wins;
+      // the tighter post-event slack keeps a later click from stealing
+      // page_view off goto.
       // Else fall back to the latest action with ts <= eventMs. If neither,
       // skip inserting a waitForEvent.
       let bestInWindowPos: number | undefined;
-      let bestInWindowDist = Number.POSITIVE_INFINITY;
+      let bestInWindowTs = Number.NEGATIVE_INFINITY;
       let bestBeforePos: number | undefined;
       for (let a = 0; a < userActionIndexes.length; a++) {
         const stepIndex = userActionIndexes[a]!;
         const ts = actionTimestamps[stepIndex];
         if (ts === undefined) continue;
-        const dist = Math.abs(ts - eventMs);
         if (
-          dist <= ACTION_TIMESTAMP_SLACK_MS &&
-          dist < bestInWindowDist
+          ts >= eventMs - ACTION_TIMESTAMP_SLACK_MS &&
+          ts <= eventMs + ACTION_TIMESTAMP_POST_SLACK_MS &&
+          ts >= bestInWindowTs
         ) {
           bestInWindowPos = a;
-          bestInWindowDist = dist;
+          bestInWindowTs = ts;
         }
         if (ts <= eventMs) {
           bestBeforePos = a;

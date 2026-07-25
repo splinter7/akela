@@ -39,11 +39,172 @@ type ElementSnapshot = {
 
 type RecordedPayload =
   | { type: "click"; el: ElementSnapshot }
-  | { type: "fill"; el: ElementSnapshot; value: string };
+  | { type: "fill"; el: ElementSnapshot; value: string }
+  | { type: "scroll"; el?: ElementSnapshot; startedAt?: number };
 
 const PASSWORD_HINT = /password|passwd|secret/i;
 
 const BINDING_NAME = "__analyticsTrackerRecord";
+
+/** Collapse scroll bursts into one recorded step (ms). */
+const SCROLL_DEBOUNCE_MS = 300;
+
+/**
+ * Init script must be a plain string. Passing a TS/tsx function to
+ * `addInitScript` embeds bundler helpers like `__name(...)` into the page,
+ * which throw and abort before click/change listeners are registered.
+ */
+function recorderInitScriptSource(bindingName: string): string {
+  return `(() => {
+  const bindingName = ${JSON.stringify(bindingName)};
+  const scrollDebounceMs = ${SCROLL_DEBOUNCE_MS};
+  const w = window;
+  if (w.__analyticsTrackerRecorderInstalled) return;
+
+  function snapshot(el) {
+    const attributes = {};
+    for (const attr of Array.from(el.attributes)) {
+      attributes[attr.name] = attr.value;
+    }
+    return {
+      tagName: el.tagName,
+      id: el.id || undefined,
+      attributes,
+    };
+  }
+
+  function findTarget(el) {
+    return (
+      el.closest(
+        "[data-analytics-id], [data-testid], button, a, input, textarea, select, [role='button']",
+      ) || el
+    );
+  }
+
+  function callBinding(payload) {
+    const binding = w[bindingName];
+    if (typeof binding !== "function") return;
+    void binding(payload);
+  }
+
+  function isPageScrollTarget(target) {
+    return (
+      target === document ||
+      target === document.documentElement ||
+      target === document.body
+    );
+  }
+
+  const elementScrollTimers = new WeakMap();
+  const elementScrollStartedAt = new WeakMap();
+  const pendingElementScrolls = new Set();
+  let pageScrollTimer = null;
+  let pageScrollPending = false;
+  let pageScrollStartedAt = 0;
+
+  function schedulePageScroll() {
+    if (!pageScrollPending) pageScrollStartedAt = Date.now();
+    pageScrollPending = true;
+    if (pageScrollTimer !== null) clearTimeout(pageScrollTimer);
+    pageScrollTimer = setTimeout(() => {
+      pageScrollTimer = null;
+      pageScrollPending = false;
+      callBinding({ type: "scroll", startedAt: pageScrollStartedAt });
+    }, scrollDebounceMs);
+  }
+
+  function scheduleElementScroll(el) {
+    if (!pendingElementScrolls.has(el)) {
+      elementScrollStartedAt.set(el, Date.now());
+    }
+    pendingElementScrolls.add(el);
+    const existing = elementScrollTimers.get(el);
+    if (existing !== undefined) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      elementScrollTimers.delete(el);
+      pendingElementScrolls.delete(el);
+      const startedAt = elementScrollStartedAt.get(el);
+      elementScrollStartedAt.delete(el);
+      callBinding({ type: "scroll", el: snapshot(el), startedAt });
+    }, scrollDebounceMs);
+    elementScrollTimers.set(el, timer);
+  }
+
+  function flushPendingScrolls() {
+    if (pageScrollTimer !== null) {
+      clearTimeout(pageScrollTimer);
+      pageScrollTimer = null;
+    }
+    if (pageScrollPending) {
+      pageScrollPending = false;
+      callBinding({ type: "scroll", startedAt: pageScrollStartedAt });
+    }
+    for (const el of Array.from(pendingElementScrolls)) {
+      const timer = elementScrollTimers.get(el);
+      if (timer !== undefined) clearTimeout(timer);
+      elementScrollTimers.delete(el);
+      pendingElementScrolls.delete(el);
+      const startedAt = elementScrollStartedAt.get(el);
+      elementScrollStartedAt.delete(el);
+      callBinding({ type: "scroll", el: snapshot(el), startedAt });
+    }
+  }
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      callBinding({ type: "click", el: snapshot(findTarget(target)) });
+    },
+    true,
+  );
+
+  document.addEventListener(
+    "change",
+    (event) => {
+      const target = event.target;
+      if (
+        !(
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          target instanceof HTMLSelectElement
+        )
+      ) {
+        return;
+      }
+      callBinding({
+        type: "fill",
+        el: snapshot(findTarget(target)),
+        value: target.value,
+      });
+    },
+    true,
+  );
+
+  document.addEventListener(
+    "scroll",
+    (event) => {
+      const target = event.target;
+      if (isPageScrollTarget(target)) return;
+      if (!(target instanceof Element)) return;
+      scheduleElementScroll(target);
+    },
+    true,
+  );
+
+  // Capture on document sees element scrolls. Do NOT use capture on window —
+  // capture would also see descendant region scrolls and record spurious page scrolls.
+  window.addEventListener("scroll", (event) => {
+    const target = event.target;
+    if (target !== window && !isPageScrollTarget(target)) return;
+    schedulePageScroll();
+  });
+
+  w.__analyticsTrackerRecorderFlushScroll = flushPendingScrolls;
+  w.__analyticsTrackerRecorderInstalled = true;
+})();`;
+}
 
 function isPasswordLike(el: ElementSnapshot): boolean {
   const type = el.attributes["type"] ?? "";
@@ -134,76 +295,9 @@ export class RecorderSession {
       },
     );
 
-    await this.context.addInitScript(
-      ({ bindingName }) => {
-        const w = window as unknown as Record<string, unknown>;
-        if (w.__analyticsTrackerRecorderInstalled) return;
-        w.__analyticsTrackerRecorderInstalled = true;
-
-        type Snap = {
-          tagName: string;
-          id?: string;
-          attributes: Record<string, string>;
-        };
-
-        function snapshot(el: Element): Snap {
-          const attributes: Record<string, string> = {};
-          for (const attr of Array.from(el.attributes)) {
-            attributes[attr.name] = attr.value;
-          }
-          return {
-            tagName: el.tagName,
-            id: el.id || undefined,
-            attributes,
-          };
-        }
-
-        function findTarget(el: Element): Element {
-          return (
-            el.closest(
-              "[data-analytics-id], [data-testid], button, a, input, textarea, select, [role='button']",
-            ) ?? el
-          );
-        }
-
-        const binding = w[bindingName] as (
-          payload: RecordedPayload,
-        ) => Promise<void>;
-
-        document.addEventListener(
-          "click",
-          (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            void binding({ type: "click", el: snapshot(findTarget(target)) });
-          },
-          true,
-        );
-
-        document.addEventListener(
-          "change",
-          (event) => {
-            const target = event.target;
-            if (
-              !(
-                target instanceof HTMLInputElement ||
-                target instanceof HTMLTextAreaElement ||
-                target instanceof HTMLSelectElement
-              )
-            ) {
-              return;
-            }
-            void binding({
-              type: "fill",
-              el: snapshot(findTarget(target)),
-              value: target.value,
-            });
-          },
-          true,
-        );
-      },
-      { bindingName: BINDING_NAME },
-    );
+    await this.context.addInitScript({
+      content: recorderInitScriptSource(BINDING_NAME),
+    });
 
     this.page = await this.context.newPage();
     await this.capture.attach(this.page);
@@ -228,6 +322,20 @@ export class RecorderSession {
       throw new Error("RecorderSession is not running");
     }
     this.stopped = true;
+
+    // Flush debounced scroll steps before tearing down the page.
+    try {
+      await this.page?.evaluate(() => {
+        const flush = (window as unknown as {
+          __analyticsTrackerRecorderFlushScroll?: () => void;
+        }).__analyticsTrackerRecorderFlushScroll;
+        flush?.();
+      });
+      // Bindings are async; give them a tick to land before we read actions.
+      await new Promise((r) => setTimeout(r, 50));
+    } catch {
+      // page may already be closed
+    }
 
     const capture = this.capture;
     if (capture) {
@@ -275,6 +383,23 @@ export class RecorderSession {
     const prefer = this.config.record?.selectorPrefer as
       | SelectorPrefer[]
       | undefined;
+
+    if (payload.type === "scroll") {
+      const at =
+        typeof payload.startedAt === "number" ? payload.startedAt : undefined;
+      if (!payload.el) {
+        this.pushAction({ action: "scroll" }, false, at);
+        return;
+      }
+      const resolved = resolveSelector(payload.el, prefer);
+      this.pushAction(
+        { action: "scroll", selector: resolved.selector },
+        resolved.fragile,
+        at,
+      );
+      return;
+    }
+
     const resolved = resolveSelector(payload.el, prefer);
 
     if (payload.type === "click") {
@@ -301,10 +426,10 @@ export class RecorderSession {
     );
   }
 
-  private pushAction(step: Step, fragile: boolean): void {
+  private pushAction(step: Step, fragile: boolean, at?: number): void {
     this.actions.push({
       step,
-      at: Date.now(),
+      at: at ?? Date.now(),
       fragile,
     });
   }

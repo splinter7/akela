@@ -330,4 +330,63 @@ describe("suggestWaitForEventSteps", () => {
       { action: "waitForEvent", eventName: "cta_click" },
     ]);
   });
+
+  it("treats scroll as a user action for waitForEvent attachment", () => {
+    const steps: Step[] = [
+      { action: "goto", path: "/" },
+      { action: "scroll", selector: "#scroll-region" },
+    ];
+    const scrolled = event("list_scrolled", {}, {}, "3000");
+    const coverage: PlanCoverage = {
+      matched: [
+        {
+          row: row("list_scrolled", { trigger: "scroll", selector: "#scroll-region" }),
+          actual: scrolled,
+        },
+      ],
+      missing: [],
+      unexpected: [],
+    };
+    const actionTimestamps = [1000, 2900];
+
+    const result = suggestWaitForEventSteps(steps, coverage, actionTimestamps);
+
+    expect(result).toEqual([
+      { action: "goto", path: "/" },
+      { action: "scroll", selector: "#scroll-region" },
+      { action: "waitForEvent", eventName: "list_scrolled" },
+    ]);
+  });
+
+  it("attaches wait after scroll when a prior click is closer to the event (debounce lag)", () => {
+    const steps: Step[] = [
+      { action: "goto", path: "/" },
+      { action: "click", selector: '[data-analytics-id="demo-cta"]' },
+      { action: "scroll", selector: "#scroll-region" },
+    ];
+    // Beacon fires when scroll starts; debounced scroll action lands later.
+    // Pre-fix "closest" favored the click (200ms) over the scroll (300ms).
+    const scrolled = event("list_scrolled", {}, {}, "5300");
+    const coverage: PlanCoverage = {
+      matched: [
+        {
+          row: row("list_scrolled", { trigger: "scroll", selector: "#scroll-region" }),
+          actual: scrolled,
+        },
+      ],
+      missing: [],
+      unexpected: [],
+    };
+    // scroll at +300ms is within post-event slack (400ms); click is earlier.
+    const actionTimestamps = [1000, 5100, 5600];
+
+    const result = suggestWaitForEventSteps(steps, coverage, actionTimestamps);
+
+    expect(result).toEqual([
+      { action: "goto", path: "/" },
+      { action: "click", selector: '[data-analytics-id="demo-cta"]' },
+      { action: "scroll", selector: "#scroll-region" },
+      { action: "waitForEvent", eventName: "list_scrolled" },
+    ]);
+  });
 });

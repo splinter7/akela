@@ -1,3 +1,4 @@
 eventName,trigger,path,selector,value,properties,notes
 page_view,page_load,/,,,"{""page"":""home""}",Home page load
 cta_click,click,,#cta,,"{""button_id"":""cta""}",Click primary CTA
+list_scrolled,scroll,,#scroll-region,,"{""element"":""demo_list"",""page"":""home""}",Scroll demo list

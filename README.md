@@ -126,7 +126,7 @@ Optional LLM prose belongs in a future SaaS layer that calls this CLI/API — no
 | `waitForAny` | `selectors` (min 2), `timeoutMs?` | Wait until **any** selector is visible (UI fork detection) |
 | `waitForURL` | `url`, `timeoutMs?` | Glob/string as Playwright |
 | `waitForEvent` | `eventName`, `timeoutMs?`, `properties?`, `fields?` | Poll captured analytics; ignores events from before the previous step started (so beacons during `goto`/`click` still count) |
-| `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page |
+| `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page; with a selector, scrolls inside overflow containers or brings the element into view. Recorder captures scroll (debounced) |
 
 Every step may include optional `when.visible: "<selector>"`. The runner waits briefly (~500ms) for that selector to become visible; if it does not, the step is **skipped** (no error) and logged in the report step log. Use with `waitForAny` for opt-in branching in one journey; omit both for a strictly linear journey (separate files per branch remain fine).
 

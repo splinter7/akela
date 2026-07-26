@@ -26,7 +26,7 @@ function event(
 
 function row(
   eventName: string,
-  overrides: Partial<Omit<PlanRow, "eventName" | "trigger">> = {},
+  overrides: Partial<Omit<PlanRow, "eventName">> = {},
 ): PlanRow {
   return {
     eventName,
@@ -235,8 +235,8 @@ describe("suggestWaitForEventSteps", () => {
     const ctaClick = event("cta_click", {}, {}, "2500");
     const coverage: PlanCoverage = {
       matched: [
-        { row: row("page_view"), actual: pageView },
-        { row: row("cta_click"), actual: ctaClick },
+        { row: row("page_view", { trigger: "page_load", path: "/" }), actual: pageView },
+        { row: row("cta_click", { trigger: "click" }), actual: ctaClick },
       ],
       missing: [],
       unexpected: [],
@@ -252,6 +252,36 @@ describe("suggestWaitForEventSteps", () => {
       { action: "click", selector: "[data-analytics-id='cta']" },
       { action: "waitForEvent", eventName: "cta_click" },
       { action: "fill", selector: "#email", value: "a@b.com" },
+    ]);
+  });
+
+  it("prefers plan-trigger action so a later scroll does not steal page_view wait", () => {
+    const steps: Step[] = [
+      { action: "goto", path: "/" },
+      { action: "click", selector: "#cta" },
+      { action: "scroll", selector: "#scroll-region" },
+    ];
+    const pageView = event("page_view", {}, {}, "1000");
+    const coverage: PlanCoverage = {
+      matched: [
+        {
+          row: row("page_view", { trigger: "page_load", path: "/" }),
+          actual: pageView,
+        },
+      ],
+      missing: [],
+      unexpected: [],
+    };
+    // scroll is latest in the wide scroll window; trigger match must pick goto.
+    const actionTimestamps = [1030, 1200, 1310];
+
+    const result = suggestWaitForEventSteps(steps, coverage, actionTimestamps);
+
+    expect(result).toEqual([
+      { action: "goto", path: "/" },
+      { action: "waitForEvent", eventName: "page_view" },
+      { action: "click", selector: "#cta" },
+      { action: "scroll", selector: "#scroll-region" },
     ]);
   });
 
@@ -377,7 +407,7 @@ describe("suggestWaitForEventSteps", () => {
       missing: [],
       unexpected: [],
     };
-    // scroll at +300ms is within post-event slack (400ms); click is earlier.
+    // scroll at +300ms is within scroll post-slack (400ms); click is earlier.
     const actionTimestamps = [1000, 5100, 5600];
 
     const result = suggestWaitForEventSteps(steps, coverage, actionTimestamps);

@@ -13,7 +13,7 @@ describe("validatePlanCsv", () => {
     const result = validatePlanCsv(csv);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.rows).toHaveLength(2);
+      expect(result.rows).toHaveLength(3);
     }
   });
 

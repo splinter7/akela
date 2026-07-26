@@ -80,6 +80,7 @@ Configure Snowplow collector URL fragments under `snowplow.collectorPatterns` so
 npm run track -- init                    # scaffold config + example journey
 npm run track -- validate <plan.csv>     # check canonical plan CSV format
 npm run track -- generate <plan.csv>     # validate then write journey YAML
+npm run track -- record <startUrl>       # record a draft journey (optionally --plan)
 npm run track -- run <file>              # run a journey and write reports
 npm run track -- run <file> --var name=value   # substitute ${name} in the journey
 ```
@@ -125,7 +126,7 @@ Optional LLM prose belongs in a future SaaS layer that calls this CLI/API — no
 | `waitForAny` | `selectors` (min 2), `timeoutMs?` | Wait until **any** selector is visible (UI fork detection) |
 | `waitForURL` | `url`, `timeoutMs?` | Glob/string as Playwright |
 | `waitForEvent` | `eventName`, `timeoutMs?`, `properties?`, `fields?` | Poll captured analytics; ignores events from before the previous step started (so beacons during `goto`/`click` still count) |
-| `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page |
+| `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page; with a selector, scrolls inside overflow containers or brings the element into view. Recorder captures scroll (debounced) |
 
 Every step may include optional `when.visible: "<selector>"`. The runner waits briefly (~500ms) for that selector to become visible; if it does not, the step is **skipped** (no error) and logged in the report step log. Use with `waitForAny` for opt-in branching in one journey; omit both for a strictly linear journey (separate files per branch remain fine).
 
@@ -143,6 +144,37 @@ Every step may include optional `when.visible: "<selector>"`. The runner waits b
 Journey-level / config: `storageState`, `gotoWaitUntil` (`load` \| `domcontentloaded` \| `networkidle` \| `commit`). Prefer `domcontentloaded` or `load` for analytics-heavy SPAs; reserve `networkidle` for pages without ongoing background requests.
 
 Config also accepts `quietMs` (default `200`) and `quietTimeoutMs` (default `2000`) for the late-beacon drain (`quietTimeoutMs` must be `>= quietMs`). Invalid config values fail at load with a clear Zod error. The quiet wait runs after success **and** after step failures (before the browser closes) so in-flight beacons still appear in the report. Capture/parse warnings are listed in the CLI summary and HTML/Markdown reports. Missing expects show a near-miss diff when an unused event with the same `eventName` exists. Expect-only failures capture `failure.png` before the browser closes.
+
+## Recording journeys
+
+Typical handoff: PM authors a plan CSV → eng runs `record --plan` against a real page → review coverage → `run` the draft.
+
+```bash
+# Terminal 1
+npm run demo
+
+# Terminal 2 — record against the demo (headed by default; press Enter to stop)
+npm run track -- record http://127.0.0.1:4173/ --plan plans/demo.csv --out journeys/demo-recorded.yaml
+```
+
+Coverage prints matched / missing / unexpected plan rows. Exit `1` if any plan events are missing (unless `--allow-incomplete`). Then:
+
+```bash
+npm run track -- run journeys/demo-recorded.yaml
+```
+
+`generate` remains available for CSV scaffolding without a browser session. Prefer stable selectors: `data-analytics-id`, then `data-testid`, then `#id` (fragile CSS last). Demo CTA uses both `id="cta"` and `data-analytics-id="demo-cta"`.
+
+Useful flags:
+
+- `--plan <plan.csv>` — seed expects and coverage from the plan
+- `--out <file>` / `--name <name>` — draft path and journey name
+- `--overwrite` — replace an existing draft
+- `--allow-incomplete` — exit `0` even when plan events are missing
+- `--include-unplanned` — also expect unplanned captured events
+- `--force` — write a draft even when zero steps were recorded
+- `--storage-state <file>` — reuse auth storage from `auth`
+- `--adapters a,b` / `--base-url <url>` — override defaults
 
 ## Generate a journey from a CSV plan
 

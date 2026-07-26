@@ -2,7 +2,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { AppConfig } from "../normalize/types.js";
-import { appConfigSchema, formatZodConfigErrors } from "./configSchema.js";
+import {
+  appConfigSchema,
+  formatZodConfigErrors,
+  type AppConfigSchema,
+} from "./configSchema.js";
 
 const DEFAULT_CONFIG: AppConfig = {
   baseUrl: "http://127.0.0.1:4173",
@@ -19,7 +23,7 @@ const DEFAULT_CONFIG: AppConfig = {
   },
 };
 
-export function loadConfig(cwd = process.cwd()): AppConfig {
+export function loadConfig(cwd = process.cwd()): AppConfigSchema {
   const path = resolve(cwd, "analytics-tracker.config.yaml");
   if (!existsSync(path)) {
     return { ...DEFAULT_CONFIG };

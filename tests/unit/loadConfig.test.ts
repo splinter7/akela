@@ -52,4 +52,40 @@ describe("loadConfig", () => {
     expect(cfg.gotoWaitUntil).toBe("load");
     expect(cfg.headless).toBe(false);
   });
+
+  it("accepts valid record.selectorPrefer", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(
+      cwd,
+      [
+        "record:",
+        "  selectorPrefer:",
+        "    - data-analytics-id",
+        "    - data-testid",
+      ].join("\n"),
+    );
+    const cfg = loadConfig(cwd);
+    expect(cfg.record?.selectorPrefer).toEqual([
+      "data-analytics-id",
+      "data-testid",
+    ]);
+  });
+
+  it("rejects invalid record.selectorPrefer names", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(
+      cwd,
+      ["record:", "  selectorPrefer:", "    - data-cy"].join("\n"),
+    );
+    expect(() => loadConfig(cwd)).toThrow(/selectorPrefer|Invalid|enum/i);
+  });
+
+  it("loads identically when record is omitted", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(cwd, "headless: false\n");
+    const cfg = loadConfig(cwd);
+    expect(cfg.record).toBeUndefined();
+    expect(cfg.headless).toBe(false);
+    expect(cfg.quietMs).toBe(200);
+  });
 });

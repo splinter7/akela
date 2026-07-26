@@ -24,7 +24,9 @@ import { parseAuthArgs } from "./parseAuthArgs.js";
 import { resolveReportJson, runExplain } from "./explainReport.js";
 import { parseExplainArgs } from "./parseExplainArgs.js";
 import { parseGenerateArgs } from "./parseGenerateArgs.js";
+import { parseRecordArgs } from "./parseRecordArgs.js";
 import { parseRunArgs } from "./parseRunArgs.js";
+import { runRecord } from "../record/runRecord.js";
 
 function printHelp(): void {
   console.log(`Analytics Tracker — verify analytics events in the browser
@@ -33,6 +35,7 @@ Usage:
   analytics-tracker init
   analytics-tracker validate <plan.csv>
   analytics-tracker generate <plan.csv> [options]
+  analytics-tracker record <startUrl> [options]
   analytics-tracker run <journey.yaml|json> [--var name=value ...]
   analytics-tracker auth <journey.yaml|json> [--var name=value ...] [--headed|--headless]
   analytics-tracker explain <reportDir|report.json> [--json] [--verbose]
@@ -48,6 +51,18 @@ Generate options:
   --out <file>          Output path (default: journeys/<name>.yaml)
   --base-url <url>      Optional baseUrl in the journey
   --overwrite           Overwrite existing output file
+
+Record options:
+  --plan <plan.csv>     Plan CSV to seed expect + coverage (recommended)
+  --name <name>         Journey name (default: plan basename or recorded)
+  --adapters a,b        Adapter list (default: snowplow)
+  --out <file>          Output path (default: journeys/<name>.yaml)
+  --base-url <url>      Optional baseUrl in the journey
+  --storage-state <f>   Playwright storageState for logged-in sessions
+  --overwrite           Overwrite existing output file
+  --force               Allow writing when zero steps were recorded
+  --allow-incomplete    Exit 0 even if plan events are missing
+  --include-unplanned   Add expect entries for unplanned captured events
 
 Run options:
   --var name=value      Substitute \${name} in the journey file (repeatable)
@@ -70,6 +85,7 @@ npm scripts:
   npm run track -- init
   npm run track -- validate plans/demo.csv
   npm run track -- generate plans/demo.csv
+  npm run track -- record http://127.0.0.1:4173/ --plan plans/demo.csv
   npm run track -- run journeys/demo.yaml
   npm run track -- run journeys/add-areas-via-upsell.yaml --var service_id=450
   npm run track -- auth journeys/login.example.yaml --var AUTH_EMAIL=a@b.com --var AUTH_PASSWORD=secret
@@ -321,6 +337,22 @@ async function cmdAuth(
   return result.pass ? 0 : 1;
 }
 
+async function cmdRecord(
+  opts: ReturnType<typeof parseRecordArgs>,
+  cwd: string,
+  config: ReturnType<typeof loadConfig>,
+): Promise<number> {
+  const result = await runRecord(
+    {
+      ...opts,
+      cwd,
+      headless: false,
+    },
+    config,
+  );
+  return result.exitCode;
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const cwd = process.cwd();
@@ -348,6 +380,18 @@ async function main(): Promise<void> {
   if (cmd === "generate") {
     try {
       process.exit(cmdGenerate(args.slice(1), cwd));
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : err);
+      process.exit(1);
+    }
+  }
+
+  if (cmd === "record") {
+    try {
+      const opts = parseRecordArgs(args.slice(1));
+      const config = loadConfig(cwd);
+      const code = await cmdRecord(opts, cwd, config);
+      process.exit(code);
     } catch (err) {
       console.error(err instanceof Error ? err.message : err);
       process.exit(1);

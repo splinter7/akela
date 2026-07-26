@@ -1,0 +1,42 @@
+# DRAFT — review selectors; expect seeded from plan plans/demo.csv
+name: demo
+baseUrl: http://127.0.0.1:4173
+gotoWaitUntil: domcontentloaded
+options:
+  ordered: true
+  match: partial
+  forbidExtra: false
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /
+  - action: waitForEvent
+    eventName: page_view
+  - action: click
+    selector: "#track-page-view"
+  - action: click
+    selector: "#track-cta"
+  - action: waitForEvent
+    eventName: cta_click
+  - action: click
+    selector: '[data-analytics-id="demo-cta"]'
+  - action: scroll
+    selector: "#scroll-region"
+  - action: waitForEvent
+    eventName: list_scrolled
+  - action: scroll
+    selector: "#scroll-region"
+  - action: scroll
+    selector: "#scroll-region"
+expect:
+  - eventName: page_view
+    properties:
+      page: home
+  - eventName: cta_click
+    properties:
+      button_id: cta
+  - eventName: list_scrolled
+    properties:
+      element: demo_list
+      page: home

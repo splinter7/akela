@@ -95,6 +95,11 @@ describe("record demo integration", () => {
     const page = session.getPage();
     // page_view auto-fires on load; CTA click covers cta_click + stable selector
     await page.click('[data-analytics-id="demo-cta"]');
+    // Scroll the demo list region to fire list_scrolled
+    await page.locator("#scroll-region").evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await page.waitForTimeout(400);
     return session.stop();
   }
 
@@ -136,9 +141,13 @@ describe("record demo integration", () => {
     expect(
       result.coverage!.matched.some((m) => m.row.eventName === "cta_click"),
     ).toBe(true);
+    expect(
+      result.coverage!.matched.some((m) => m.row.eventName === "list_scrolled"),
+    ).toBe(true);
     expect(existsSync(outAbs)).toBe(true);
     const yaml = readFileSync(outAbs, "utf8");
     expect(yaml).toMatch(/data-analytics-id/);
+    expect(yaml).toMatch(/scroll-region|action: scroll/);
 
     const journey = loadJourney(outAbs, process.cwd());
     journey.baseUrl = baseUrl;
@@ -150,6 +159,9 @@ describe("record demo integration", () => {
       true,
     );
     expect(runResult.events.some((e) => e.eventName === "cta_click")).toBe(
+      true,
+    );
+    expect(runResult.events.some((e) => e.eventName === "list_scrolled")).toBe(
       true,
     );
   }, 120_000);

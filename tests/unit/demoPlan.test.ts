@@ -16,7 +16,16 @@ describe("plans/demo.csv", () => {
     expect(journey.name).toBe("demo");
     expect(journey.steps.some((s) => s.action === "goto" && s.path === "/")).toBe(true);
     expect(journey.steps.some((s) => s.action === "click" && s.selector === "#cta")).toBe(true);
-    expect(journey.expect.map((e) => e.eventName)).toEqual(["page_view", "cta_click"]);
+    expect(
+      journey.steps.some(
+        (s) => s.action === "scroll" && s.selector === "#scroll-region",
+      ),
+    ).toBe(true);
+    expect(journey.expect.map((e) => e.eventName)).toEqual([
+      "page_view",
+      "cta_click",
+      "list_scrolled",
+    ]);
     expect(yamlText).toContain("# Home page load");
   });
 });

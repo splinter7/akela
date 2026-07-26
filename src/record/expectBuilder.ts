@@ -11,16 +11,29 @@ const DEFAULT_CHURN_KEYS = ["timestamp", "eid", "dtm"];
 /** How far before an event a user action may still be considered causal. */
 const ACTION_TIMESTAMP_SLACK_MS = 1000;
 /**
- * How far after an event a user action may still be considered causal
- * (async binding + scroll debounce). Keep tighter than pre-event slack so a
- * later unrelated click does not steal waits from goto/page_view.
+ * How far after an event a non-scroll action may still be considered causal
+ * (async recorder binding slightly after beacon dtm).
  */
-const ACTION_TIMESTAMP_POST_SLACK_MS = 400;
+const ACTION_TIMESTAMP_POST_SLACK_MS = 100;
+/**
+ * Extra post-event slack for scroll actions only (debounced recording lands
+ * after the beacon). Must stay tighter than typical gaps between unrelated
+ * actions in fast headless recordings.
+ */
+const SCROLL_ACTION_POST_SLACK_MS = 400;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const USER_ACTION_NAMES = new Set(["goto", "click", "fill", "scroll"]);
+
+/** Plan trigger → journey action that typically causes the event. */
+const TRIGGER_TO_ACTION: Record<string, Step["action"]> = {
+  page_load: "goto",
+  click: "click",
+  fill: "fill",
+  scroll: "scroll",
+};
 
 function isUuidLike(value: unknown): boolean {
   return typeof value === "string" && UUID_RE.test(value);
@@ -239,13 +252,13 @@ export function suggestWaitForEventSteps(
     let afterStepIndex: number | undefined;
 
     if (eventMs !== undefined && userActionIndexes.length > 0) {
-      // Prefer the *latest* user action in
-      // [event - preSlack, event + postSlack]. Latest-in-window beats
-      // closest-in-window so a debounced scroll after a click still wins;
-      // the tighter post-event slack keeps a later click from stealing
-      // page_view off goto.
-      // Else fall back to the latest action with ts <= eventMs. If neither,
-      // skip inserting a waitForEvent.
+      // Prefer the latest in-window action whose type matches the plan
+      // trigger (goto for page_load, scroll for scroll, …). Falls back to
+      // the latest in-window action, then the latest with ts <= eventMs.
+      // Scroll actions get a wider post-event window for debounce lag.
+      const preferredAction = TRIGGER_TO_ACTION[match.row.trigger];
+      let bestPreferredPos: number | undefined;
+      let bestPreferredTs = Number.NEGATIVE_INFINITY;
       let bestInWindowPos: number | undefined;
       let bestInWindowTs = Number.NEGATIVE_INFINITY;
       let bestBeforePos: number | undefined;
@@ -253,20 +266,37 @@ export function suggestWaitForEventSteps(
         const stepIndex = userActionIndexes[a]!;
         const ts = actionTimestamps[stepIndex];
         if (ts === undefined) continue;
-        if (
+        const step = steps[stepIndex]!;
+        const postSlack =
+          step.action === "scroll"
+            ? SCROLL_ACTION_POST_SLACK_MS
+            : ACTION_TIMESTAMP_POST_SLACK_MS;
+        const inWindow =
           ts >= eventMs - ACTION_TIMESTAMP_SLACK_MS &&
-          ts <= eventMs + ACTION_TIMESTAMP_POST_SLACK_MS &&
-          ts >= bestInWindowTs
-        ) {
+          ts <= eventMs + postSlack;
+        if (inWindow && ts >= bestInWindowTs) {
           bestInWindowPos = a;
           bestInWindowTs = ts;
+        }
+        if (
+          inWindow &&
+          preferredAction !== undefined &&
+          step.action === preferredAction &&
+          ts >= bestPreferredTs
+        ) {
+          bestPreferredPos = a;
+          bestPreferredTs = ts;
         }
         if (ts <= eventMs) {
           bestBeforePos = a;
         }
       }
       const chosen =
-        bestInWindowPos !== undefined ? bestInWindowPos : bestBeforePos;
+        bestPreferredPos !== undefined
+          ? bestPreferredPos
+          : bestInWindowPos !== undefined
+            ? bestInWindowPos
+            : bestBeforePos;
       if (chosen === undefined) return;
       afterStepIndex = userActionIndexes[chosen]!;
     } else {

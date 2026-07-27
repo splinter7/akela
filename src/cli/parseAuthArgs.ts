@@ -14,7 +14,7 @@ export type AuthCliOptions = {
 export function parseAuthArgs(args: string[]): AuthCliOptions {
   if (args.length === 0 || args[0]!.startsWith("-")) {
     throw new Error(
-      "Usage: analytics-tracker auth <journey.yaml|json> [--var name=value ...] [--headed|--headless]",
+      "Usage: akela auth <journey.yaml|json> [--var name=value ...] [--headed|--headless]",
     );
   }
 

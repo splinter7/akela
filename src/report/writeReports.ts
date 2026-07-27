@@ -169,7 +169,7 @@ function buildHtml(
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Analytics Tracker — ${escapeHtml(result.journeyName)}</title>
+  <title>Akela — ${escapeHtml(result.journeyName)}</title>
   <style>
     :root { font-family: "Segoe UI", system-ui, sans-serif; color: #1a1a1a; }
     body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; background: #f6f7f9; }

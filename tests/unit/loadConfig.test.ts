@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { loadConfig } from "../../src/config/loadConfig.js";
 
 function writeConfig(cwd: string, yaml: string): void {
-  writeFileSync(join(cwd, "analytics-tracker.config.yaml"), yaml, "utf8");
+  writeFileSync(join(cwd, "akela.config.yaml"), yaml, "utf8");
 }
 
 describe("loadConfig", () => {
@@ -87,5 +87,16 @@ describe("loadConfig", () => {
     expect(cfg.record).toBeUndefined();
     expect(cfg.headless).toBe(false);
     expect(cfg.quietMs).toBe(200);
+  });
+
+  it("ignores legacy analytics-tracker.config.yaml", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeFileSync(
+      join(cwd, "analytics-tracker.config.yaml"),
+      "headless: false\n",
+      "utf8",
+    );
+    const cfg = loadConfig(cwd);
+    expect(cfg.headless).toBe(true);
   });
 });

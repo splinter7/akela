@@ -11,7 +11,7 @@ export type RunCliOptions = {
 export function parseRunArgs(args: string[]): RunCliOptions {
   if (args.length === 0 || args[0]!.startsWith("-")) {
     throw new Error(
-      "Usage: analytics-tracker run <journey.yaml|json> [--var name=value ...]",
+      "Usage: akela run <journey.yaml|json> [--var name=value ...]",
     );
   }
 

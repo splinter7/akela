@@ -73,7 +73,7 @@ describe("runJourneyWithConfig failure paths", () => {
   });
 
   it("fails with clear error when storageState file is missing", async () => {
-    const cwd = join(tmpdir(), `analytics-tracker-cwd-${Date.now()}`);
+    const cwd = join(tmpdir(), `akela-cwd-${Date.now()}`);
     const rel = "missing-storage-state.json";
     const result = await runJourneyWithConfig(
       minimalJourney({ storageState: rel }),

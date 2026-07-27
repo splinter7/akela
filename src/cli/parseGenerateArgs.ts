@@ -33,7 +33,7 @@ function takeFlagValue(
 export function parseGenerateArgs(args: string[]): GenerateCliOptions {
   if (args.length === 0 || args[0]!.startsWith("-")) {
     throw new Error(
-      "Usage: analytics-tracker generate <plan.csv> [--name <name>] [--adapters a,b] [--out <file>] [--base-url <url>] [--overwrite]",
+      "Usage: akela generate <plan.csv> [--name <name>] [--adapters a,b] [--out <file>] [--base-url <url>] [--overwrite]",
     );
   }
 

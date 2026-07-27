@@ -1,4 +1,4 @@
-# Default config for Analytics Tracker
+# Default config for Akela
 baseUrl: http://127.0.0.1:4173
 headless: true
 reportDir: reports

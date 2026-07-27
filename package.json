@@ -1,10 +1,10 @@
 {
-  "name": "analytics-tracker",
+  "name": "akela",
   "version": "0.1.0",
   "description": "Browser analytics event verification via Playwright journeys",
   "type": "module",
   "bin": {
-    "analytics-tracker": "./dist/cli/index.js"
+    "akela": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",

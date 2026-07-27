@@ -24,7 +24,7 @@ const DEFAULT_CONFIG: AppConfig = {
 };
 
 export function loadConfig(cwd = process.cwd()): AppConfigSchema {
-  const path = resolve(cwd, "analytics-tracker.config.yaml");
+  const path = resolve(cwd, "akela.config.yaml");
   if (!existsSync(path)) {
     return { ...DEFAULT_CONFIG };
   }
@@ -52,7 +52,7 @@ export function loadConfig(cwd = process.cwd()): AppConfigSchema {
   const parsed = appConfigSchema.safeParse(merged);
   if (!parsed.success) {
     throw new Error(
-      `Invalid analytics-tracker.config.yaml:\n${formatZodConfigErrors(parsed.error)}`,
+      `Invalid akela.config.yaml:\n${formatZodConfigErrors(parsed.error)}`,
     );
   }
   return parsed.data;

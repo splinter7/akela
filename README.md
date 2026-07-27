@@ -1,4 +1,4 @@
-# Analytics Tracker
+# Akela
 
 Verify Snowplow (and future analytics platforms) events in the browser. Clone this repo, run a journey, open an HTML report.
 

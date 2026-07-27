@@ -29,17 +29,17 @@ import { parseRunArgs } from "./parseRunArgs.js";
 import { runRecord } from "../record/runRecord.js";
 
 function printHelp(): void {
-  console.log(`Analytics Tracker — verify analytics events in the browser
+  console.log(`Akela — verify analytics events in the browser
 
 Usage:
-  analytics-tracker init
-  analytics-tracker validate <plan.csv>
-  analytics-tracker generate <plan.csv> [options]
-  analytics-tracker record <startUrl> [options]
-  analytics-tracker run <journey.yaml|json> [--var name=value ...]
-  analytics-tracker auth <journey.yaml|json> [--var name=value ...] [--headed|--headless]
-  analytics-tracker explain <reportDir|report.json> [--json] [--verbose]
-  analytics-tracker help
+  akela init
+  akela validate <plan.csv>
+  akela generate <plan.csv> [options]
+  akela record <startUrl> [options]
+  akela run <journey.yaml|json> [--var name=value ...]
+  akela auth <journey.yaml|json> [--var name=value ...] [--headed|--headless]
+  akela explain <reportDir|report.json> [--json] [--verbose]
+  akela help
 
 Validate:
   Checks the CSV against the canonical plan format. Extra columns are ignored.
@@ -97,11 +97,11 @@ function cmdInit(cwd: string): void {
   const journeysDir = join(cwd, "journeys");
   mkdirSync(journeysDir, { recursive: true });
 
-  const configPath = join(cwd, "analytics-tracker.config.yaml");
+  const configPath = join(cwd, "akela.config.yaml");
   if (!existsSync(configPath)) {
     writeFileSync(
       configPath,
-      `# Default config for Analytics Tracker
+      `# Default config for Akela
 baseUrl: http://127.0.0.1:4173
 headless: true
 reportDir: reports
@@ -371,7 +371,7 @@ async function main(): Promise<void> {
   if (cmd === "validate") {
     const csvPath = args[1];
     if (!csvPath) {
-      console.error("Usage: analytics-tracker validate <plan.csv>");
+      console.error("Usage: akela validate <plan.csv>");
       process.exit(1);
     }
     process.exit(cmdValidate(csvPath, cwd));

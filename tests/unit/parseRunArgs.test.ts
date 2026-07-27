@@ -39,9 +39,9 @@ describe("parseRunArgs", () => {
   });
 
   it("requires journey path", () => {
-    expect(() => parseRunArgs([])).toThrow(/Usage: analytics-tracker run/);
+    expect(() => parseRunArgs([])).toThrow(/Usage: akela run/);
     expect(() => parseRunArgs(["--var", "a=1"])).toThrow(
-      /Usage: analytics-tracker run/,
+      /Usage: akela run/,
     );
   });
 

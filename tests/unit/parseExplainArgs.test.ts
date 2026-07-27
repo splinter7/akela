@@ -28,7 +28,7 @@ describe("parseExplainArgs", () => {
 
   it("rejects missing path", () => {
     expect(() => parseExplainArgs([])).toThrow(
-      /Usage: analytics-tracker explain/,
+      /Usage: akela explain/,
     );
   });
 

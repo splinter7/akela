@@ -5,7 +5,7 @@ export type ExplainCliOptions = {
 };
 
 const usage =
-  "Usage: analytics-tracker explain <reportDir|report.json> [--json] [--verbose]";
+  "Usage: akela explain <reportDir|report.json> [--json] [--verbose]";
 
 export function parseExplainArgs(args: string[]): ExplainCliOptions {
   if (args.length === 0 || args[0]!.startsWith("-")) {

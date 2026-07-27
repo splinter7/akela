@@ -44,7 +44,7 @@ type RecordedPayload =
 
 const PASSWORD_HINT = /password|passwd|secret/i;
 
-const BINDING_NAME = "__analyticsTrackerRecord";
+const BINDING_NAME = "__akelaRecord";
 
 /** Collapse scroll bursts into one recorded step (ms). */
 const SCROLL_DEBOUNCE_MS = 300;
@@ -59,7 +59,7 @@ function recorderInitScriptSource(bindingName: string): string {
   const bindingName = ${JSON.stringify(bindingName)};
   const scrollDebounceMs = ${SCROLL_DEBOUNCE_MS};
   const w = window;
-  if (w.__analyticsTrackerRecorderInstalled) return;
+  if (w.__akelaRecorderInstalled) return;
 
   function snapshot(el) {
     const attributes = {};
@@ -201,8 +201,8 @@ function recorderInitScriptSource(bindingName: string): string {
     schedulePageScroll();
   });
 
-  w.__analyticsTrackerRecorderFlushScroll = flushPendingScrolls;
-  w.__analyticsTrackerRecorderInstalled = true;
+  w.__akelaRecorderFlushScroll = flushPendingScrolls;
+  w.__akelaRecorderInstalled = true;
 })();`;
 }
 
@@ -327,8 +327,8 @@ export class RecorderSession {
     try {
       await this.page?.evaluate(() => {
         const flush = (window as unknown as {
-          __analyticsTrackerRecorderFlushScroll?: () => void;
-        }).__analyticsTrackerRecorderFlushScroll;
+          __akelaRecorderFlushScroll?: () => void;
+        }).__akelaRecorderFlushScroll;
         flush?.();
       });
       // Bindings are async; give them a tick to land before we read actions.

@@ -38,7 +38,7 @@ function takeFlagValue(
 export function parseRecordArgs(args: string[]): RecordCliOptions {
   if (args.length === 0 || args[0]!.startsWith("-")) {
     throw new Error(
-      "Usage: analytics-tracker record <startUrl> [--plan <plan.csv>] [--name <name>] [--adapters a,b] [--out <file>] [--base-url <url>] [--storage-state <file>] [--overwrite] [--force] [--allow-incomplete] [--include-unplanned]",
+      "Usage: akela record <startUrl> [--plan <plan.csv>] [--name <name>] [--adapters a,b] [--out <file>] [--base-url <url>] [--storage-state <file>] [--overwrite] [--force] [--allow-incomplete] [--include-unplanned]",
     );
   }
 

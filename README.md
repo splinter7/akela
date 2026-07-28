@@ -2,6 +2,8 @@
 
 Verify Snowplow (and future analytics platforms) events in the browser. Clone this repo, run a journey, open an HTML report.
 
+![Akela PASS report — demo journey with page_view and cta_click](docs/assets/demo-report.png)
+
 ## Quick start
 
 ```bash

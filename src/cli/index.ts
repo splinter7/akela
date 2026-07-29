@@ -333,6 +333,9 @@ async function cmdAuth(
   if (result.error) {
     console.log(`Error: ${result.error}`);
   }
+  if (result.screenshotPath) {
+    console.log(`Screenshot: ${result.screenshotPath}`);
+  }
 
   return result.pass ? 0 : 1;
 }

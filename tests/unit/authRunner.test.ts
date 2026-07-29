@@ -76,6 +76,39 @@ describe("runAuthJourneyWithConfig", () => {
     expect(chromium.launch).toHaveBeenCalledWith({ headless: false });
   });
 
+  it("writes a failure screenshot when a step fails", async () => {
+    const cwd = join(tmpdir(), `at-auth-shot-${Date.now()}`);
+    tempDirs.push(cwd);
+    mkdirSync(cwd, { recursive: true });
+    mockPage.goto.mockRejectedValueOnce(new Error("nav failed"));
+
+    const result = await runAuthJourneyWithConfig(
+      authJourney(),
+      { ...config, reportDir: "reports" },
+      cwd,
+      { headless: true },
+    );
+
+    expect(result.pass).toBe(false);
+    expect(mockPage.screenshot).toHaveBeenCalled();
+    expect(result.screenshotPath).toBe(join(cwd, "reports", "auth-failure.png"));
+    expect(existsSync(result.screenshotPath!)).toBe(true);
+  });
+
+  it("does not screenshot on success", async () => {
+    const cwd = join(tmpdir(), `at-auth-ok-${Date.now()}`);
+    tempDirs.push(cwd);
+    mkdirSync(cwd, { recursive: true });
+
+    const result = await runAuthJourneyWithConfig(authJourney(), config, cwd, {
+      headless: true,
+    });
+
+    expect(result.pass).toBe(true);
+    expect(result.screenshotPath).toBeUndefined();
+    expect(mockPage.screenshot).not.toHaveBeenCalled();
+  });
+
   it("fails when saveStorageState never runs (all steps skipped)", async () => {
     // Force goto to throw so save never runs:
     mockPage.goto.mockRejectedValueOnce(new Error("nav failed"));

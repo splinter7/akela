@@ -41,6 +41,7 @@ function stepDetail(step: Step): string {
     case "click":
     case "fill":
     case "waitForSelector":
+    case "waitForHydrated":
       return step.selector;
     case "waitForEvent":
       return step.eventName;
@@ -220,6 +221,29 @@ export async function executeStep(
           window.scrollBy(0, document.body.scrollHeight);
         });
       }
+      return { status: "ran" };
+    }
+    case "waitForHydrated": {
+      const timeout = step.timeoutMs ?? 15000;
+      try {
+        await page.waitForFunction(
+          (selector: string) => {
+            const el = document.querySelector(selector);
+            if (!el) return false;
+            // React tags host nodes with __reactProps$<hash> / __reactFiber$<hash>
+            // only once hydration reaches them.
+            return Object.keys(el).some((key) => key.startsWith("__react"));
+          },
+          step.selector,
+          { timeout },
+        );
+      } catch {
+        throw new Error(
+          `waitForHydrated timed out after ${timeout}ms: React never attached handlers to "${step.selector}". ` +
+            `The page is probably still server-rendered HTML — interacting now submits forms natively instead of running the app's handlers.`,
+        );
+      }
+      runtime.onProgress?.(`  hydrated: ${step.selector}`);
       return { status: "ran" };
     }
     case "saveStorageState": {

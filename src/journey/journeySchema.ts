@@ -84,6 +84,12 @@ const stepSchema = z.discriminatedUnion("action", [
     when: whenSchema,
   }),
   z.object({
+    action: z.literal("waitForHydrated"),
+    selector: z.string().min(1),
+    timeoutMs: z.number().nonnegative().optional(),
+    when: whenSchema,
+  }),
+  z.object({
     action: z.literal("saveStorageState"),
     path: z.string().min(1),
     when: whenSchema,

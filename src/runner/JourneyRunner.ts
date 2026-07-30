@@ -1,6 +1,6 @@
 import { chromium, type Browser, type Page } from "playwright";
-import { resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import type {
   AppConfig,
   Journey,
@@ -42,6 +42,8 @@ export type AuthRunResult = {
   error?: string;
   storageStatePaths: string[];
   stepLog: StepLogEntry[];
+  /** Written only on failure, so a headless auth run leaves visual evidence. */
+  screenshotPath?: string;
 };
 
 export type AuthJourneyOptions = {
@@ -237,7 +239,9 @@ export async function runAuthJourneyWithConfig(
   const onProgress = options.onProgress ?? (() => {});
 
   let browser: Browser | undefined;
+  let page: Page | undefined;
   let error: string | undefined;
+  let screenshotPath: string | undefined;
   const storageStatePaths: string[] = [];
   const stepLog: StepLogEntry[] = [];
 
@@ -245,7 +249,7 @@ export async function runAuthJourneyWithConfig(
     browser = await chromium.launch({ headless: options.headless ?? false });
 
     const context = await browser.newContext({});
-    const page = await context.newPage();
+    page = await context.newPage();
 
     const total = journey.steps.length;
     for (let i = 0; i < journey.steps.length; i++) {
@@ -287,6 +291,17 @@ export async function runAuthJourneyWithConfig(
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
     onProgress(`error: ${error}`);
+    if (page) {
+      try {
+        const abs = resolve(cwd, config.reportDir ?? "reports", "auth-failure.png");
+        mkdirSync(dirname(abs), { recursive: true });
+        writeFileSync(abs, await page.screenshot({ fullPage: true }));
+        screenshotPath = abs;
+        onProgress(`captured failure screenshot: ${abs}`);
+      } catch {
+        // Screenshot is best-effort.
+      }
+    }
   } finally {
     await browser?.close();
   }
@@ -300,5 +315,6 @@ export async function runAuthJourneyWithConfig(
     error,
     storageStatePaths,
     stepLog,
+    ...(screenshotPath !== undefined ? { screenshotPath } : {}),
   };
 }

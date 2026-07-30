@@ -86,6 +86,16 @@ export type Step =
       selectors: string[];
       timeoutMs?: number;
     })
+  | (StepBase & {
+      /**
+       * Wait until React has attached handlers to the element. Server-rendered
+       * markup is visible before hydration, so acting on it can trigger native
+       * form submits instead of the app's own handlers.
+       */
+      action: "waitForHydrated";
+      selector: string;
+      timeoutMs?: number;
+    })
   | (StepBase & { action: "saveStorageState"; path: string });
 
 export type StepResult = {

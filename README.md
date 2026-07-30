@@ -126,6 +126,7 @@ Optional LLM prose belongs in a future SaaS layer that calls this CLI/API — no
 | `wait` | `timeoutMs` | Fixed sleep — prefer `waitForEvent` / `waitForSelector` when possible |
 | `waitForSelector` | `selector`, `timeoutMs?`, `state?` | Default state `visible` |
 | `waitForAny` | `selectors` (min 2), `timeoutMs?` | Wait until **any** selector is visible (UI fork detection) |
+| `waitForHydrated` | `selector`, `timeoutMs?` (default 15000) | Wait until React has attached handlers to the element. Use before interacting with server-rendered forms — see below |
 | `waitForURL` | `url`, `timeoutMs?` | Glob/string as Playwright |
 | `waitForEvent` | `eventName`, `timeoutMs?`, `properties?`, `fields?` | Poll captured analytics; ignores events from before the previous step started (so beacons during `goto`/`click` still count) |
 | `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page; with a selector, scrolls inside overflow containers or brings the element into view. Recorder captures scroll (debounced) |
@@ -141,6 +142,24 @@ Every step may include optional `when.visible: "<selector>"`. The runner waits b
   selector: "[data-testid=market-toggle] >> nth=0"
   when:
     visible: "[data-testid=market-selection-page]"
+```
+
+### Server-rendered forms and hydration
+
+On SSR apps (Next.js and similar), markup is **visible before it is interactive**. `waitForSelector` is satisfied by the server HTML, so a `fill` + `click` can land in the gap before React attaches handlers — on real pages this window has been measured at ~2 seconds. Clicking a `type="submit"` button in that window makes the browser submit the form **natively** instead of running the app's `onSubmit`, which reloads the page, wipes uncontrolled inputs, and skips whatever the handler was supposed to do. `gotoWaitUntil: load` does not help, because hydration finishes after the `load` event.
+
+Guard interactive steps with `waitForHydrated` on the element you are about to click:
+
+```yaml
+- action: waitForSelector
+  selector: "[data-testid=email]"
+- action: waitForHydrated
+  selector: "[data-testid=submit]"
+- action: fill
+  selector: "[data-testid=email]"
+  value: "${AUTH_EMAIL}"
+- action: click
+  selector: "[data-testid=submit]"
 ```
 
 Journey-level / config: `storageState`, `gotoWaitUntil` (`load` \| `domcontentloaded` \| `networkidle` \| `commit`). Prefer `domcontentloaded` or `load` for analytics-heavy SPAs; reserve `networkidle` for pages without ongoing background requests.

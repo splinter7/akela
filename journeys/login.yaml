@@ -33,6 +33,13 @@ steps:
     selector: "[data-testid=email]"
     timeoutMs: 15000
 
+  # The form is server-rendered and visible ~2s before React hydrates it.
+  # Submitting before then posts the form natively, which reloads /login with
+  # an empty email field and never sets the login_email cookie.
+  - action: waitForHydrated
+    selector: "[data-testid=submit]"
+    timeoutMs: 15000
+
   - action: fill
     selector: "[data-testid=email]"
     value: "${AUTH_EMAIL}"
@@ -50,6 +57,10 @@ steps:
 
   - action: waitForSelector
     selector: "[data-testid=password]"
+    timeoutMs: 15000
+
+  - action: waitForHydrated
+    selector: "[data-testid=submit]"
     timeoutMs: 15000
 
   - action: fill

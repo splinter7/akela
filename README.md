@@ -94,13 +94,13 @@ Exit code `0` = pass, `1` = fail. Invalid journey YAML fails at load with schema
 Any journey may use `${name}` placeholders (letters, digits, underscore). Pass values at run time — repeatable, and multiple names per run:
 
 ```bash
-npm run track -- run journeys/add-areas-via-upsell.yaml --var service_id=450
+npm run track -- run journeys/checkout.yaml --var product_id=450
 npm run track -- run journeys/checkout.yaml --var currency=USD --var sku=abc
 ```
 
-Substitution runs on the file text **before** YAML/JSON parse. Unquoted `${service_id}` becomes a YAML number when the value is numeric; quote it (`"${service_id}"`) to keep a string. Missing placeholders fail the load with a clear error. Unused `--var` flags are ignored.
+Substitution runs on the file text **before** YAML/JSON parse. Unquoted `${product_id}` becomes a YAML number when the value is numeric; quote it (`"${product_id}"`) to keep a string. Missing placeholders fail the load with a clear error. Unused `--var` flags are ignored.
 
-Numeric expects soft-match string wire values: `fields: { service_id: 450 }` matches an actual `"450"` (and the reverse). Non-canonical strings like `"450px"` still fail.
+Numeric expects soft-match string wire values: `fields: { product_id: 450 }` matches an actual `"450"` (and the reverse). Non-canonical strings like `"450px"` still fail.
 
 While a journey runs, the CLI prints live progress (step start/skip/retry, captured event names, `waitForEvent` waiting/found, quiet drain, verify). On failure it also writes `failure.png` into the report folder when a page was open.
 
@@ -267,7 +267,7 @@ const result = await runJourney(
 | `properties` | Event payload only | Page, element, counts on the self-describing event |
 | `fields` | Payload + Snowplow contexts (flattened) | Entity IDs / values that may arrive in `cx` |
 
-Snowplow flattening rules: start from payload properties; merge each context `data` key if absent (payload wins on collision); always add schema-qualified keys like `selected_service_context.service_id`.
+Snowplow `fields` flattening: start from the event payload; for each context, merge each `data` key if absent (payload wins on collision); always also add a schema-qualified key `{context_schema_name}.{property}` derived from the Iglu entity name. Prefer bare keys when uniqueness is clear; use the qualified form when the same property name appears on the payload or across contexts.
 
 ## Adding another platform later
 

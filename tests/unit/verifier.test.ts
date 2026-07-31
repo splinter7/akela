@@ -32,7 +32,7 @@ describe("isDeepSubset", () => {
   it("soft-matches number and canonical numeric string", () => {
     expect(isDeepSubset(450, "450")).toBe(true);
     expect(isDeepSubset("450", 450)).toBe(true);
-    expect(isDeepSubset({ service_id: 450 }, { service_id: "450" })).toBe(true);
+    expect(isDeepSubset({ product_id: 450 }, { product_id: "450" })).toBe(true);
   });
 
   it("rejects non-canonical numeric strings", () => {
@@ -137,16 +137,16 @@ describe("verifyEvents", () => {
 
   it("matches fields against flattened bag (subset)", () => {
     const result = verifyEvents(
-      [ev("banner", { page: "service_details" }, { page: "service_details", service_id: 179 })],
-      [{ eventName: "banner", fields: { service_id: 179 } }],
+      [ev("banner", { page: "product_page" }, { page: "product_page", product_id: 179 })],
+      [{ eventName: "banner", fields: { product_id: 179 } }],
     );
     expect(result.pass).toBe(true);
   });
 
   it("fails when fields value is missing from flattened bag", () => {
     const result = verifyEvents(
-      [ev("banner", { page: "service_details" })],
-      [{ eventName: "banner", fields: { service_id: 179 } }],
+      [ev("banner", { page: "product_page" })],
+      [{ eventName: "banner", fields: { product_id: 179 } }],
     );
     expect(result.pass).toBe(false);
     expect(result.missing).toHaveLength(1);
@@ -154,36 +154,36 @@ describe("verifyEvents", () => {
 
   it("requires both properties and fields when both are set", () => {
     const ok = verifyEvents(
-      [ev("banner", { page: "service_details" }, { page: "service_details", service_id: 179 })],
+      [ev("banner", { page: "product_page" }, { page: "product_page", product_id: 179 })],
       [
         {
           eventName: "banner",
-          properties: { page: "service_details" },
-          fields: { service_id: 179 },
+          properties: { page: "product_page" },
+          fields: { product_id: 179 },
         },
       ],
     );
     expect(ok.pass).toBe(true);
 
     const failProps = verifyEvents(
-      [ev("banner", { page: "other" }, { page: "other", service_id: 179 })],
+      [ev("banner", { page: "other" }, { page: "other", product_id: 179 })],
       [
         {
           eventName: "banner",
-          properties: { page: "service_details" },
-          fields: { service_id: 179 },
+          properties: { page: "product_page" },
+          fields: { product_id: 179 },
         },
       ],
     );
     expect(failProps.pass).toBe(false);
 
     const failFields = verifyEvents(
-      [ev("banner", { page: "service_details" }, { page: "service_details", service_id: 1 })],
+      [ev("banner", { page: "product_page" }, { page: "product_page", product_id: 1 })],
       [
         {
           eventName: "banner",
-          properties: { page: "service_details" },
-          fields: { service_id: 179 },
+          properties: { page: "product_page" },
+          fields: { product_id: 179 },
         },
       ],
     );
@@ -196,10 +196,10 @@ describe("verifyEvents", () => {
         ev(
           "a",
           { x: 1 },
-          { x: 1, service_id: 179, "selected_service_context.service_id": 179 },
+          { x: 1, product_id: 179, "product_context.product_id": 179 },
         ),
       ],
-      [{ eventName: "a", properties: { x: 1 }, fields: { service_id: 179 } }],
+      [{ eventName: "a", properties: { x: 1 }, fields: { product_id: 179 } }],
       { match: "exact" },
     );
     expect(result.pass).toBe(true);
@@ -207,8 +207,8 @@ describe("verifyEvents", () => {
 
   it("soft-matches numeric fields string vs number", () => {
     const result = verifyEvents(
-      [ev("banner", {}, { service_id: "450" })],
-      [{ eventName: "banner", fields: { service_id: 450 } }],
+      [ev("banner", {}, { product_id: "450" })],
+      [{ eventName: "banner", fields: { product_id: 450 } }],
     );
     expect(result.pass).toBe(true);
   });

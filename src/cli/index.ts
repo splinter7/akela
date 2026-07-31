@@ -81,7 +81,7 @@ Explain:
   --verbose             List every technical finding (default is summary-first)
 
   Tip: prefer --out=path / --var=name=value form. In PowerShell, quote flags:
-  '--out=journeys/x.yaml' '--var=service_id=450'
+  '--out=journeys/x.yaml' '--var=product_id=450'
 
 npm scripts:
   npm run track -- init
@@ -89,7 +89,7 @@ npm scripts:
   npm run track -- generate plans/demo.csv
   npm run track -- record http://127.0.0.1:4173/ --plan plans/demo.csv
   npm run track -- run journeys/demo.yaml
-  npm run track -- run journeys/add-areas-via-upsell.yaml --var service_id=450
+  npm run track -- run journeys/checkout.yaml --var product_id=450
   npm run track -- auth journeys/login.example.yaml --var AUTH_EMAIL=a@b.com --var AUTH_PASSWORD=secret
   npm run demo
 `);

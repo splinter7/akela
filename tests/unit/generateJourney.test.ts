@@ -74,24 +74,24 @@ describe("generateJourneyYaml", () => {
         eventName: "banner_shown",
         trigger: "page_load",
         path: "/details",
-        properties: { page: "service_details" },
-        fields: { service_id: 179 },
+        properties: { page: "product_page" },
+        fields: { product_id: 179 },
       },
     ];
-    const yamlText = generateJourneyYaml(rows, { name: "upsell" });
+    const yamlText = generateJourneyYaml(rows, { name: "promo" });
     const journey = parseYaml(yamlText) as Journey;
     expect(journey.steps).toContainEqual({
       action: "waitForEvent",
       eventName: "banner_shown",
       timeoutMs: 5000,
-      properties: { page: "service_details" },
-      fields: { service_id: 179 },
+      properties: { page: "product_page" },
+      fields: { product_id: 179 },
     });
     expect(journey.expect).toEqual([
       {
         eventName: "banner_shown",
-        properties: { page: "service_details" },
-        fields: { service_id: 179 },
+        properties: { page: "product_page" },
+        fields: { product_id: 179 },
       },
     ]);
   });

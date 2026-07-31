@@ -14,12 +14,12 @@ describe("parseRunArgs", () => {
       parseRunArgs([
         "journeys/x.yaml",
         "--var",
-        "service_id=450",
+        "product_id=450",
         "--var=currency=USD",
       ]),
     ).toEqual({
       journeyPath: "journeys/x.yaml",
-      vars: { service_id: "450", currency: "USD" },
+      vars: { product_id: "450", currency: "USD" },
     });
   });
 

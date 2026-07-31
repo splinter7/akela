@@ -93,7 +93,7 @@ describe("parsePlanCsv", () => {
   it("parses optional fields JSON column", () => {
     const csv = [
       "eventName,trigger,path,selector,value,properties,fields,notes",
-      'banner_shown,page_load,/details,,,"{""page"":""service_details""}","{""service_id"":179}",Banner',
+      'banner_shown,page_load,/details,,,"{""page"":""product_page""}","{""product_id"":179}",Banner',
     ].join("\n");
 
     const rows = parsePlanCsv(csv);
@@ -102,8 +102,8 @@ describe("parsePlanCsv", () => {
       eventName: "banner_shown",
       trigger: "page_load",
       path: "/details",
-      properties: { page: "service_details" },
-      fields: { service_id: 179 },
+      properties: { page: "product_page" },
+      fields: { product_id: 179 },
       notes: "Banner",
     });
   });

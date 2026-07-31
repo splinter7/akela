@@ -115,12 +115,12 @@ describe("SnowplowAdapter", () => {
           ue_pr: {
             schema: "iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0",
             data: {
-              schema: "iglu:com.example/sponsored_placement_banner_shown/jsonschema/3-0-0",
+              schema: "iglu:com.example/promo_banner_shown/jsonschema/3-0-0",
               data: {
-                page: "service_details",
-                element: "add_areas_upsell_banner",
-                active_area_count: 17,
-                available_area_count: 2,
+                page: "product_page",
+                element: "promo_banner",
+                item_count: 17,
+                available_count: 2,
               },
             },
           },
@@ -128,13 +128,13 @@ describe("SnowplowAdapter", () => {
             schema: "iglu:com.snowplowanalytics.snowplow/contexts/jsonschema/1-0-1",
             data: [
               {
-                schema: "iglu:com.example/selected_service_context/jsonschema/2-0-0",
-                data: { service_id: 179 },
+                schema: "iglu:com.example/product_context/jsonschema/2-0-0",
+                data: { product_id: 179 },
               },
               {
-                schema: "iglu:com.example/entities_market_groups_context/jsonschema/1-0-0",
+                schema: "iglu:com.example/cart_context/jsonschema/1-0-0",
                 data: {
-                  market_list: [
+                  line_items: [
                     { id: "3754", price: 480, currency: "CAD" },
                   ],
                 },
@@ -153,20 +153,20 @@ describe("SnowplowAdapter", () => {
     };
     const events = adapter.parse(req);
     expect(events).toHaveLength(1);
-    expect(events[0]!.eventName).toBe("sponsored_placement_banner_shown");
+    expect(events[0]!.eventName).toBe("promo_banner_shown");
     expect(events[0]!.properties).toMatchObject({
-      page: "service_details",
-      element: "add_areas_upsell_banner",
-      active_area_count: 17,
-      available_area_count: 2,
+      page: "product_page",
+      element: "promo_banner",
+      item_count: 17,
+      available_count: 2,
     });
-    expect(events[0]!.properties.service_id).toBeUndefined();
-    expect(events[0]!.fields.service_id).toBe(179);
-    expect(events[0]!.fields["selected_service_context.service_id"]).toBe(179);
-    expect(events[0]!.fields.market_list).toEqual([
+    expect(events[0]!.properties.product_id).toBeUndefined();
+    expect(events[0]!.fields.product_id).toBe(179);
+    expect(events[0]!.fields["product_context.product_id"]).toBe(179);
+    expect(events[0]!.fields.line_items).toEqual([
       { id: "3754", price: 480, currency: "CAD" },
     ]);
-    expect(events[0]!.fields.page).toBe("service_details");
+    expect(events[0]!.fields.page).toBe("product_page");
   });
 
   it("payload wins over context on flat key collision", () => {
@@ -179,15 +179,15 @@ describe("SnowplowAdapter", () => {
             schema: "iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0",
             data: {
               schema: "iglu:com.example/evt/jsonschema/1-0-0",
-              data: { service_id: 1 },
+              data: { product_id: 1 },
             },
           },
           cx: {
             schema: "iglu:com.snowplowanalytics.snowplow/contexts/jsonschema/1-0-1",
             data: [
               {
-                schema: "iglu:com.example/selected_service_context/jsonschema/1-0-0",
-                data: { service_id: 99 },
+                schema: "iglu:com.example/product_context/jsonschema/1-0-0",
+                data: { product_id: 99 },
               },
             ],
           },
@@ -202,9 +202,9 @@ describe("SnowplowAdapter", () => {
       timestamp: 1,
     };
     const events = adapter.parse(req);
-    expect(events[0]!.properties.service_id).toBe(1);
-    expect(events[0]!.fields.service_id).toBe(1);
-    expect(events[0]!.fields["selected_service_context.service_id"]).toBe(99);
+    expect(events[0]!.properties.product_id).toBe(1);
+    expect(events[0]!.fields.product_id).toBe(1);
+    expect(events[0]!.fields["product_context.product_id"]).toBe(99);
   });
 
   it("expands POST batch with multiple events in data[]", () => {

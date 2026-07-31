@@ -163,19 +163,19 @@ adapters:
   - snowplow
 steps:
   - action: goto
-    path: /items/\${service_id}/details
+    path: /items/\${product_id}/details
 expect:
   - eventName: page_view
     fields:
-      service_id: \${service_id}
+      product_id: \${product_id}
 `,
     );
-    const journey = loadJourney(path, dir, { service_id: "450" });
+    const journey = loadJourney(path, dir, { product_id: "450" });
     expect(journey.steps[0]).toMatchObject({
       action: "goto",
       path: "/items/450/details",
     });
-    expect(journey.expect[0]!.fields).toEqual({ service_id: 450 });
+    expect(journey.expect[0]!.fields).toEqual({ product_id: 450 });
   });
 
   it("fails when a placeholder is missing a --var", () => {

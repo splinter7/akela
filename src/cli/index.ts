@@ -65,10 +65,12 @@ Record options:
   --include-unplanned   Add expect entries for unplanned captured events
 
 Run options:
-  --var name=value      Substitute \${name} in the journey file (repeatable)
+  --var name=value      Substitute \${name} in the journey file (repeatable).
+                        Precedence: --var > journey vars: > \${name:-default}
 
 Auth options:
-  --var name=value      Substitute \${name} in the journey file (repeatable)
+  --var name=value      Substitute \${name} in the journey file (repeatable).
+                        Precedence: --var > journey vars: > \${name:-default}
   --headed              Run with a visible browser window (default)
   --headless            Run without a visible browser window
                          (last of --headed/--headless wins if both given)

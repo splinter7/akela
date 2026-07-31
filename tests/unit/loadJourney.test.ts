@@ -196,6 +196,94 @@ expect:
     );
   });
 
+  it("resolves inline default placeholders without --var", () => {
+    const path = writeJourney(
+      "default-var.yaml",
+      `name: defaults
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /\${segment:-home}
+expect:
+  - eventName: page_view
+    properties:
+      currency: "\${CURRENCY:-USD}"
+`,
+    );
+    const journey = loadJourney(path, dir, {});
+    expect(journey.steps[0]).toMatchObject({ action: "goto", path: "/home" });
+    expect(journey.expect[0]!.properties).toEqual({ currency: "USD" });
+  });
+
+  it("uses top-level vars as defaults without --var", () => {
+    const path = writeJourney(
+      "file-vars.yaml",
+      `name: file-vars
+vars:
+  segment: checkout
+  currency: EUR
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /\${segment}
+expect:
+  - eventName: page_view
+    properties:
+      currency: "\${currency}"
+`,
+    );
+    const journey = loadJourney(path, dir, {});
+    expect(journey.steps[0]).toMatchObject({
+      action: "goto",
+      path: "/checkout",
+    });
+    expect(journey.expect[0]!.properties).toEqual({ currency: "EUR" });
+    expect(journey).not.toHaveProperty("vars");
+  });
+
+  it("lets --var override top-level vars", () => {
+    const path = writeJourney(
+      "cli-wins.yaml",
+      `name: cli-wins
+vars:
+  segment: checkout
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /\${segment}
+expect:
+  - eventName: page_view
+`,
+    );
+    const journey = loadJourney(path, dir, { segment: "home" });
+    expect(journey.steps[0]).toMatchObject({ action: "goto", path: "/home" });
+  });
+
+  it("lets top-level vars override inline defaults", () => {
+    const path = writeJourney(
+      "file-over-inline.yaml",
+      `name: file-over-inline
+vars:
+  segment: checkout
+adapters:
+  - snowplow
+steps:
+  - action: goto
+    path: /\${segment:-home}
+expect:
+  - eventName: page_view
+`,
+    );
+    const journey = loadJourney(path, dir, {});
+    expect(journey.steps[0]).toMatchObject({
+      action: "goto",
+      path: "/checkout",
+    });
+  });
+
   it("run mode rejects empty expect", () => {
     const path = writeJourney(
       "empty-expect.yaml",

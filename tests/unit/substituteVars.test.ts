@@ -34,4 +34,24 @@ describe("substituteVars", () => {
       /Unresolved journey variables: \(empty\)/,
     );
   });
+
+  it("resolves inline default when var is missing", () => {
+    expect(substituteVars("path: /${segment:-home}", {})).toBe("path: /home");
+  });
+
+  it("lets explicit vars win over inline defaults", () => {
+    expect(
+      substituteVars("path: /${segment:-home}", { segment: "checkout" }),
+    ).toBe("path: /checkout");
+  });
+
+  it("allows empty inline defaults", () => {
+    expect(substituteVars("a: '${x:-}'", {})).toBe("a: ''");
+  });
+
+  it("still throws for bare placeholders when missing", () => {
+    expect(() => substituteVars("a: ${x}", {})).toThrow(
+      /Unresolved journey variables: x/,
+    );
+  });
 });

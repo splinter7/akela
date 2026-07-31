@@ -96,6 +96,13 @@ const stepSchema = z.discriminatedUnion("action", [
   }),
 ]);
 
+const journeyVarsSchema = z
+  .record(
+    z.string().min(1),
+    z.union([z.string(), z.number(), z.boolean()]),
+  )
+  .optional();
+
 export const journeySchema = z.object({
   name: z.string().min(1),
   baseUrl: z.string().min(1).optional(),
@@ -106,6 +113,8 @@ export const journeySchema = z.object({
   expect: z.array(expectedEventSchema).min(1),
   storageState: z.string().min(1).optional(),
   gotoWaitUntil: gotoWaitUntilSchema.optional(),
+  /** Load-time defaults for ${name}; stripped before return from loadJourney. */
+  vars: journeyVarsSchema,
 });
 
 export const authJourneySchema = journeySchema

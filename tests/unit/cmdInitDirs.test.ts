@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { cmdInit } from "../../src/cli/index.js";
+import { cmdInit } from "../../src/cli/cmdInit.js";
 
 describe("cmdInit", () => {
   it("creates default plans and journeys dirs and seeds config keys", () => {

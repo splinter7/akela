@@ -52,7 +52,7 @@ CSV quoting: double quotes inside JSON must be doubled (`""`).
    - Screen/UI dims usually on the event (`page`, `element`, counts) → `properties`
    - Entity IDs / shared dims often sent as analytics **context** (`service_id`, `market_id`, lists) → `fields` (also fine in `fields` if unsure; do not invent wire-format schemas)
 5. Put prose (when it fires, priority, comments) in `notes` — not as fake columns the tool requires.
-6. Write the CSV to the path the user asked for, or under `plans/<short-name>.csv` (or the project's `plansDir` from `akela.config.yaml` if set). Do not invent a nested layout unless they request one.
+6. Write the CSV to the path the user asked for, or under the project's `plansDir` (default `plans/<short-name>.csv`). Do not invent a nested layout unless they request one.
 7. Tell them: developers will fill `#TODO-*` selectors later; run `validate` next.
 
 ## Trigger mapping cheat sheet
@@ -90,7 +90,3 @@ sponsored_placement_banner_shown,page_load,/service-details,,,"{""page"":""servi
 sponsored_placement_interaction_clicked,click,,,,,"{""page"":""service_details"",""element"":""add_areas""}","{""service_id"":179}",Pro clicks Add areas CTA
 ```
 
-## More detail
-
-- Column rules and JSON quoting: [reference.md](reference.md)
-- Before/after from a messy plan: [examples.md](examples.md)

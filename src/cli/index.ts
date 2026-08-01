@@ -6,6 +6,7 @@ import {
   readFileSync,
 } from "node:fs";
 import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "../config/loadConfig.js";
 import { diagnoseFailure } from "../diagnose/diagnoseFailure.js";
 import { formatDiagnosisText } from "../diagnose/formatDiagnosis.js";
@@ -49,7 +50,7 @@ Validate:
 Generate options:
   --name <name>         Journey name (default: CSV filename)
   --adapters a,b        Adapter list (default: snowplow)
-  --out <file>          Output path (default: journeys/<name>.yaml)
+  --out <file>          Output path (default: {journeysDir}/<name>.yaml; config key journeysDir, default journeys)
   --base-url <url>      Optional baseUrl in the journey
   --overwrite           Overwrite existing output file
 
@@ -57,7 +58,7 @@ Record options:
   --plan <plan.csv>     Plan CSV to seed expect + coverage (recommended)
   --name <name>         Journey name (default: plan basename or recorded)
   --adapters a,b        Adapter list (default: snowplow)
-  --out <file>          Output path (default: journeys/<name>.yaml)
+  --out <file>          Output path (default: {journeysDir}/<name>.yaml; config key journeysDir, default journeys)
   --base-url <url>      Optional baseUrl in the journey
   --storage-state <f>   Playwright storageState for logged-in sessions
   --overwrite           Overwrite existing output file
@@ -96,8 +97,13 @@ npm scripts:
 `);
 }
 
-function cmdInit(cwd: string): void {
-  const journeysDir = join(cwd, "journeys");
+export function cmdInit(cwd: string): void {
+  const config = loadConfig(cwd);
+  const plansDirRel = config.plansDir ?? "plans";
+  const journeysDirRel = config.journeysDir ?? "journeys";
+  const plansDir = join(cwd, plansDirRel);
+  const journeysDir = join(cwd, journeysDirRel);
+  mkdirSync(plansDir, { recursive: true });
   mkdirSync(journeysDir, { recursive: true });
 
   const configPath = join(cwd, "akela.config.yaml");
@@ -108,6 +114,8 @@ function cmdInit(cwd: string): void {
 baseUrl: http://127.0.0.1:4173
 headless: true
 reportDir: reports
+plansDir: plans
+journeysDir: journeys
 snowplow:
   collectorPatterns:
     - "/i"
@@ -159,7 +167,7 @@ expect:
       loginExamplePath,
       `# Example auth journey — copy and fill real selectors for your site.
 # Usage:
-#   npm run track -- auth journeys/login.example.yaml \\
+#   npm run track -- auth ${journeysDirRel}/login.example.yaml \\
 #     --var AUTH_EMAIL=you@example.com \\
 #     --var AUTH_PASSWORD=secret
 # Then point tracking journeys at the written storageState path.
@@ -193,7 +201,7 @@ steps:
   }
 
   console.log("\nNext: npm run demo  (in another terminal)");
-  console.log("Then:  npm run track -- run journeys/example.yaml");
+  console.log(`Then:  npm run track -- run ${journeysDirRel}/example.yaml`);
 }
 
 function cmdValidate(csvPath: string, cwd: string): number {
@@ -457,7 +465,12 @@ async function main(): Promise<void> {
   process.exit(1);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const isDirectRun =
+  process.argv[1] &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

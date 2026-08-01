@@ -101,8 +101,8 @@ export function cmdInit(cwd: string): void {
   const config = loadConfig(cwd);
   const plansDirRel = config.plansDir ?? "plans";
   const journeysDirRel = config.journeysDir ?? "journeys";
-  const plansDir = join(cwd, plansDirRel);
-  const journeysDir = join(cwd, journeysDirRel);
+  const plansDir = resolve(cwd, plansDirRel);
+  const journeysDir = resolve(cwd, journeysDirRel);
   mkdirSync(plansDir, { recursive: true });
   mkdirSync(journeysDir, { recursive: true });
 

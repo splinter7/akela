@@ -10,7 +10,6 @@ test-results/
 .auth/
 .cursor/
 .superpowers/
-docs/superpowers/
 
 # Private / site-specific journeys (keep local)
 journeys/activation-service-happy-path.yaml

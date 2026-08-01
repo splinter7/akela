@@ -99,4 +99,34 @@ describe("loadConfig", () => {
     const cfg = loadConfig(cwd);
     expect(cfg.headless).toBe(true);
   });
+
+  it("defaults plansDir and journeysDir when config file is missing", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    const cfg = loadConfig(cwd);
+    expect(cfg.plansDir).toBe("plans");
+    expect(cfg.journeysDir).toBe("journeys");
+  });
+
+  it("accepts plansDir and journeysDir overrides", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(
+      cwd,
+      ["plansDir: tracking/plans", "journeysDir: tracking/journeys"].join("\n"),
+    );
+    const cfg = loadConfig(cwd);
+    expect(cfg.plansDir).toBe("tracking/plans");
+    expect(cfg.journeysDir).toBe("tracking/journeys");
+  });
+
+  it("rejects empty plansDir", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(cwd, 'plansDir: ""\n');
+    expect(() => loadConfig(cwd)).toThrow(/plansDir/);
+  });
+
+  it("rejects empty journeysDir", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "analytics-cfg-"));
+    writeConfig(cwd, 'journeysDir: ""\n');
+    expect(() => loadConfig(cwd)).toThrow(/journeysDir/);
+  });
 });

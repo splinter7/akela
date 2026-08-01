@@ -14,6 +14,8 @@ export const appConfigSchema = z
     baseUrl: z.string().min(1).optional(),
     headless: z.boolean().optional(),
     reportDir: z.string().min(1).optional(),
+    plansDir: z.string().min(1).optional(),
+    journeysDir: z.string().min(1).optional(),
     storageState: z.string().min(1).optional(),
     gotoWaitUntil: gotoWaitUntilSchema.optional(),
     quietMs: z.number().nonnegative().optional(),

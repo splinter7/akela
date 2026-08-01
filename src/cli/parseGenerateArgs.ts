@@ -1,10 +1,10 @@
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 
 export type GenerateCliOptions = {
   csvPath: string;
   name: string;
   adapters: string[];
-  outPath: string;
+  outPath?: string;
   baseUrl?: string;
   force: boolean;
 };
@@ -78,7 +78,7 @@ export function parseGenerateArgs(args: string[]): GenerateCliOptions {
     csvPath,
     name,
     adapters,
-    outPath: outPath ?? join("journeys", `${name}.yaml`),
+    outPath,
     baseUrl,
     force,
   };

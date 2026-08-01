@@ -26,6 +26,7 @@ import { parseExplainArgs } from "./parseExplainArgs.js";
 import { parseGenerateArgs } from "./parseGenerateArgs.js";
 import { parseRecordArgs } from "./parseRecordArgs.js";
 import { parseRunArgs } from "./parseRunArgs.js";
+import { resolveJourneyOutPath } from "./resolveJourneyOutPath.js";
 import { runRecord } from "../record/runRecord.js";
 
 function printHelp(): void {
@@ -216,13 +217,19 @@ function cmdValidate(csvPath: string, cwd: string): number {
 
 function cmdGenerate(args: string[], cwd: string): number {
   const opts = parseGenerateArgs(args);
+  const config = loadConfig(cwd);
+  const outPath = resolveJourneyOutPath(
+    opts.outPath,
+    opts.name,
+    config.journeysDir ?? "journeys",
+  );
   const csvAbs = resolve(cwd, opts.csvPath);
   if (!existsSync(csvAbs)) {
     console.error(`Plan CSV not found: ${csvAbs}`);
     return 1;
   }
 
-  const outAbs = resolve(cwd, opts.outPath);
+  const outAbs = resolve(cwd, outPath);
   if (existsSync(outAbs) && !opts.force) {
     console.error(`Output already exists: ${outAbs} (use --overwrite to replace)`);
     return 1;
@@ -244,7 +251,7 @@ function cmdGenerate(args: string[], cwd: string): number {
   mkdirSync(dirname(outAbs), { recursive: true });
   writeFileSync(outAbs, generated.yaml, "utf8");
   console.log(`Generated ${outAbs}`);
-  console.log(`Review TODO selectors (if any), then: npm run track -- run ${opts.outPath}`);
+  console.log(`Review TODO selectors (if any), then: npm run track -- run ${outPath}`);
   return 0;
 }
 
@@ -343,7 +350,7 @@ async function cmdAuth(
 }
 
 async function cmdRecord(
-  opts: ReturnType<typeof parseRecordArgs>,
+  opts: ReturnType<typeof parseRecordArgs> & { outPath: string },
   cwd: string,
   config: ReturnType<typeof loadConfig>,
 ): Promise<number> {
@@ -395,7 +402,12 @@ async function main(): Promise<void> {
     try {
       const opts = parseRecordArgs(args.slice(1));
       const config = loadConfig(cwd);
-      const code = await cmdRecord(opts, cwd, config);
+      const outPath = resolveJourneyOutPath(
+        opts.outPath,
+        opts.name,
+        config.journeysDir ?? "journeys",
+      );
+      const code = await cmdRecord({ ...opts, outPath }, cwd, config);
       process.exit(code);
     } catch (err) {
       console.error(err instanceof Error ? err.message : err);

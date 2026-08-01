@@ -1,11 +1,11 @@
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 
 export type RecordCliOptions = {
   startUrl: string;
   planPath?: string;
   name: string;
   adapters: string[];
-  outPath: string;
+  outPath?: string;
   baseUrl?: string;
   storageState?: string;
   overwrite: boolean;
@@ -106,7 +106,7 @@ export function parseRecordArgs(args: string[]): RecordCliOptions {
     planPath,
     name: resolvedName,
     adapters,
-    outPath: outPath ?? join("journeys", `${resolvedName}.yaml`),
+    outPath,
     baseUrl,
     storageState,
     overwrite,

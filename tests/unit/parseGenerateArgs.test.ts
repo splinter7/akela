@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { join } from "node:path";
 import { parseGenerateArgs } from "../../src/cli/parseGenerateArgs.js";
 
 describe("parseGenerateArgs", () => {
@@ -9,7 +8,7 @@ describe("parseGenerateArgs", () => {
       csvPath: "plans/checkout.csv",
       name: "checkout",
       adapters: ["snowplow"],
-      outPath: join("journeys", "checkout.yaml"),
+      outPath: undefined,
       baseUrl: undefined,
       force: false,
     });

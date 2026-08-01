@@ -25,6 +25,20 @@ npm run track -- run journeys/demo.yaml
 
 Open the printed `report.html` path. You should see **PASS** with `page_view` and `cta_click`.
 
+## Project layout
+
+Plans and journeys can live in any directories. Pass paths explicitly to `validate`, `generate`, `record`, `run`, and `auth`.
+
+Defaults (overridable in `akela.config.yaml`):
+
+| Key | Default | Used for |
+|-----|---------|----------|
+| `plansDir` | `plans` | Convention / `init` scaffold (not auto-prefixed onto CLI args) |
+| `journeysDir` | `journeys` | Default `--out` for `generate` / `record`, and `init` examples |
+| `reportDir` | `reports` | HTML/JSON/Markdown reports |
+
+Examples in this repo use `plans/` and `journeys/` for familiarity.
+
 ## Point at a real / staging site
 
 Copy the template and customize:
@@ -189,7 +203,7 @@ npm run track -- run journeys/demo-recorded.yaml
 Useful flags:
 
 - `--plan <plan.csv>` — seed expects and coverage from the plan
-- `--out <file>` / `--name <name>` — draft path and journey name
+- `--out <file>` / `--name <name>` — draft path and journey name (default `{journeysDir}/<name>.yaml` from config)
 - `--overwrite` — replace an existing draft
 - `--allow-incomplete` — exit `0` even when plan events are missing
 - `--include-unplanned` — also expect unplanned captured events
@@ -231,7 +245,7 @@ page_view,page_load,/,,,"{""page"":""home""}",,Home page load
 cta_click,click,,#cta,,"{""button_id"":""cta""}",,Click primary CTA
 ```
 
-Defaults: journey name from the CSV filename, `adapters: [snowplow]`, output `journeys/<name>.yaml`. Use `--overwrite` to replace an existing file.
+Defaults: journey name from the CSV filename, `adapters: [snowplow]`, output `{journeysDir}/<name>.yaml` (config key `journeysDir`, default `journeys`). Use `--overwrite` to replace an existing file. Pass `--out` to write anywhere.
 
 ## TypeScript API
 

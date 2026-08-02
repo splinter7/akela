@@ -132,6 +132,10 @@ export type AppConfig = {
   baseUrl?: string;
   headless?: boolean;
   reportDir?: string;
+  /** Conventional directory for plan CSVs (scaffold/docs). Default plans. */
+  plansDir?: string;
+  /** Default directory for generate/record journey output. Default journeys. */
+  journeysDir?: string;
   /** Default Playwright storage state when journey omits storageState. */
   storageState?: string;
   /** Default goto waitUntil when journey omits gotoWaitUntil. */

@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { join } from "node:path";
 import { parseRecordArgs } from "../../src/cli/parseRecordArgs.js";
 
 describe("parseRecordArgs", () => {
@@ -10,7 +9,7 @@ describe("parseRecordArgs", () => {
       planPath: undefined,
       name: "recorded",
       adapters: ["snowplow"],
-      outPath: join("journeys", "recorded.yaml"),
+      outPath: undefined,
       baseUrl: undefined,
       storageState: undefined,
       overwrite: false,
@@ -28,7 +27,7 @@ describe("parseRecordArgs", () => {
     ]);
     expect(opts.planPath).toBe("plans/checkout.csv");
     expect(opts.name).toBe("checkout");
-    expect(opts.outPath).toBe(join("journeys", "checkout.yaml"));
+    expect(opts.outPath).toBeUndefined();
   });
 
   it("parses flag overrides", () => {

@@ -5,7 +5,7 @@ import {
   existsSync,
   readFileSync,
 } from "node:fs";
-import { resolve, join, dirname } from "node:path";
+import { resolve, dirname } from "node:path";
 import { loadConfig } from "../config/loadConfig.js";
 import { diagnoseFailure } from "../diagnose/diagnoseFailure.js";
 import { formatDiagnosisText } from "../diagnose/formatDiagnosis.js";
@@ -26,6 +26,8 @@ import { parseExplainArgs } from "./parseExplainArgs.js";
 import { parseGenerateArgs } from "./parseGenerateArgs.js";
 import { parseRecordArgs } from "./parseRecordArgs.js";
 import { parseRunArgs } from "./parseRunArgs.js";
+import { resolveJourneyOutPath } from "./resolveJourneyOutPath.js";
+import { cmdInit } from "./cmdInit.js";
 import { runRecord } from "../record/runRecord.js";
 
 function printHelp(): void {
@@ -48,7 +50,7 @@ Validate:
 Generate options:
   --name <name>         Journey name (default: CSV filename)
   --adapters a,b        Adapter list (default: snowplow)
-  --out <file>          Output path (default: journeys/<name>.yaml)
+  --out <file>          Output path (default: {journeysDir}/<name>.yaml; config key journeysDir, default journeys)
   --base-url <url>      Optional baseUrl in the journey
   --overwrite           Overwrite existing output file
 
@@ -56,7 +58,7 @@ Record options:
   --plan <plan.csv>     Plan CSV to seed expect + coverage (recommended)
   --name <name>         Journey name (default: plan basename or recorded)
   --adapters a,b        Adapter list (default: snowplow)
-  --out <file>          Output path (default: journeys/<name>.yaml)
+  --out <file>          Output path (default: {journeysDir}/<name>.yaml; config key journeysDir, default journeys)
   --base-url <url>      Optional baseUrl in the journey
   --storage-state <f>   Playwright storageState for logged-in sessions
   --overwrite           Overwrite existing output file
@@ -95,106 +97,6 @@ npm scripts:
 `);
 }
 
-function cmdInit(cwd: string): void {
-  const journeysDir = join(cwd, "journeys");
-  mkdirSync(journeysDir, { recursive: true });
-
-  const configPath = join(cwd, "akela.config.yaml");
-  if (!existsSync(configPath)) {
-    writeFileSync(
-      configPath,
-      `# Default config for Akela
-baseUrl: http://127.0.0.1:4173
-headless: true
-reportDir: reports
-snowplow:
-  collectorPatterns:
-    - "/i"
-    - "/com.snowplowanalytics.snowplow/tp2"
-    - "/snowplow/"
-`,
-      "utf8",
-    );
-    console.log(`Created ${configPath}`);
-  } else {
-    console.log(`Config already exists: ${configPath}`);
-  }
-
-  const examplePath = join(journeysDir, "example.yaml");
-  if (!existsSync(examplePath)) {
-    writeFileSync(
-      examplePath,
-      `name: example
-baseUrl: http://127.0.0.1:4173
-options:
-  ordered: false
-  match: partial
-  forbidExtra: false
-adapters:
-  - snowplow
-steps:
-  - action: goto
-    path: /
-  - action: click
-    selector: "#track-page-view"
-  - action: waitForEvent
-    eventName: page_view
-    timeoutMs: 5000
-expect:
-  - eventName: page_view
-    properties:
-      page: home
-`,
-      "utf8",
-    );
-    console.log(`Created ${examplePath}`);
-  } else {
-    console.log(`Example journey already exists: ${examplePath}`);
-  }
-
-  const loginExamplePath = join(journeysDir, "login.example.yaml");
-  if (!existsSync(loginExamplePath)) {
-    writeFileSync(
-      loginExamplePath,
-      `# Example auth journey — copy and fill real selectors for your site.
-# Usage:
-#   npm run track -- auth journeys/login.example.yaml \\
-#     --var AUTH_EMAIL=you@example.com \\
-#     --var AUTH_PASSWORD=secret
-# Then point tracking journeys at the written storageState path.
-
-name: login-example
-baseUrl: https://staging.example.com
-adapters:
-  - snowplow
-expect: []
-steps:
-  - action: goto
-    path: /login
-  - action: fill
-    selector: "#TODO-email"
-    value: "\${AUTH_EMAIL}"
-  - action: fill
-    selector: "#TODO-password"
-    value: "\${AUTH_PASSWORD}"
-  - action: click
-    selector: "#TODO-login-submit"
-  - action: waitForSelector
-    selector: "#TODO-logged-in-marker"
-  - action: saveStorageState
-    path: .auth/storage-state.json
-`,
-      "utf8",
-    );
-    console.log(`Created ${loginExamplePath}`);
-  } else {
-    console.log(`Login example already exists: ${loginExamplePath}`);
-  }
-
-  console.log("\nNext: npm run demo  (in another terminal)");
-  console.log("Then:  npm run track -- run journeys/example.yaml");
-}
-
 function cmdValidate(csvPath: string, cwd: string): number {
   const csvAbs = resolve(cwd, csvPath);
   if (!existsSync(csvAbs)) {
@@ -216,13 +118,19 @@ function cmdValidate(csvPath: string, cwd: string): number {
 
 function cmdGenerate(args: string[], cwd: string): number {
   const opts = parseGenerateArgs(args);
+  const config = loadConfig(cwd);
+  const outPath = resolveJourneyOutPath(
+    opts.outPath,
+    opts.name,
+    config.journeysDir ?? "journeys",
+  );
   const csvAbs = resolve(cwd, opts.csvPath);
   if (!existsSync(csvAbs)) {
     console.error(`Plan CSV not found: ${csvAbs}`);
     return 1;
   }
 
-  const outAbs = resolve(cwd, opts.outPath);
+  const outAbs = resolve(cwd, outPath);
   if (existsSync(outAbs) && !opts.force) {
     console.error(`Output already exists: ${outAbs} (use --overwrite to replace)`);
     return 1;
@@ -244,7 +152,7 @@ function cmdGenerate(args: string[], cwd: string): number {
   mkdirSync(dirname(outAbs), { recursive: true });
   writeFileSync(outAbs, generated.yaml, "utf8");
   console.log(`Generated ${outAbs}`);
-  console.log(`Review TODO selectors (if any), then: npm run track -- run ${opts.outPath}`);
+  console.log(`Review TODO selectors (if any), then: npm run track -- run ${outPath}`);
   return 0;
 }
 
@@ -343,7 +251,7 @@ async function cmdAuth(
 }
 
 async function cmdRecord(
-  opts: ReturnType<typeof parseRecordArgs>,
+  opts: ReturnType<typeof parseRecordArgs> & { outPath: string },
   cwd: string,
   config: ReturnType<typeof loadConfig>,
 ): Promise<number> {
@@ -369,8 +277,13 @@ async function main(): Promise<void> {
   }
 
   if (cmd === "init") {
-    cmdInit(cwd);
-    process.exit(0);
+    try {
+      cmdInit(cwd);
+      process.exit(0);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : err);
+      process.exit(1);
+    }
   }
 
   if (cmd === "validate") {
@@ -395,7 +308,12 @@ async function main(): Promise<void> {
     try {
       const opts = parseRecordArgs(args.slice(1));
       const config = loadConfig(cwd);
-      const code = await cmdRecord(opts, cwd, config);
+      const outPath = resolveJourneyOutPath(
+        opts.outPath,
+        opts.name,
+        config.journeysDir ?? "journeys",
+      );
+      const code = await cmdRecord({ ...opts, outPath }, cwd, config);
       process.exit(code);
     } catch (err) {
       console.error(err instanceof Error ? err.message : err);

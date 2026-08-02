@@ -12,6 +12,8 @@ const DEFAULT_CONFIG: AppConfig = {
   baseUrl: "http://127.0.0.1:4173",
   headless: true,
   reportDir: "reports",
+  plansDir: "plans",
+  journeysDir: "journeys",
   quietMs: 200,
   quietTimeoutMs: 2000,
   snowplow: {

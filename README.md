@@ -1,4 +1,8 @@
-# Akela
+<p align="center">
+  <img src="docs/assets/akela-logo.png" alt="Akela" width="280">
+</p>
+
+---
 
 Verify Snowplow (and future analytics platforms) events in the browser. Clone this repo, run a journey, open an HTML report.
 
@@ -31,11 +35,11 @@ Plans and journeys can live in any directories. Pass paths explicitly to `valida
 
 Defaults (overridable in `akela.config.yaml`):
 
-| Key | Default | Used for |
-|-----|---------|----------|
-| `plansDir` | `plans` | Convention / `init` scaffold (not auto-prefixed onto CLI args) |
+| Key           | Default    | Used for                                                       |
+| ------------- | ---------- | -------------------------------------------------------------- |
+| `plansDir`    | `plans`    | Convention / `init` scaffold (not auto-prefixed onto CLI args) |
 | `journeysDir` | `journeys` | Default `--out` for `generate` / `record`, and `init` examples |
-| `reportDir` | `reports` | HTML/JSON/Markdown reports |
+| `reportDir`   | `reports`  | HTML/JSON/Markdown reports                                     |
 
 Examples in this repo use `plans/` and `journeys/` for familiarity.
 
@@ -132,18 +136,18 @@ Optional LLM prose belongs in a future SaaS layer that calls this CLI/API — no
 
 ## Journey steps
 
-| Action | Fields | Notes |
-|--------|--------|-------|
-| `goto` | `path` | Uses `gotoWaitUntil` from journey or config (default `domcontentloaded`) |
-| `click` | `selector`, `timeoutMs?`, `retries?` | Optional Playwright timeout; `retries` re-attempts after failure (default 0) |
-| `fill` | `selector`, `value`, `timeoutMs?`, `retries?` | Same timeout/retry options as `click` |
-| `wait` | `timeoutMs` | Fixed sleep — prefer `waitForEvent` / `waitForSelector` when possible |
-| `waitForSelector` | `selector`, `timeoutMs?`, `state?` | Default state `visible` |
-| `waitForAny` | `selectors` (min 2), `timeoutMs?` | Wait until **any** selector is visible (UI fork detection) |
-| `waitForHydrated` | `selector`, `timeoutMs?` (default 15000) | Wait until React has attached handlers to the element. Use before interacting with server-rendered forms — see below |
-| `waitForURL` | `url`, `timeoutMs?` | Glob/string as Playwright |
-| `waitForEvent` | `eventName`, `timeoutMs?`, `properties?`, `fields?` | Poll captured analytics; ignores events from before the previous step started (so beacons during `goto`/`click` still count) |
-| `scroll` | `selector?`, `timeoutMs?` | Omit selector to scroll the page; with a selector, scrolls inside overflow containers or brings the element into view. Recorder captures scroll (debounced) |
+| Action            | Fields                                              | Notes                                                                                                                                                       |
+| ----------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `goto`            | `path`                                              | Uses `gotoWaitUntil` from journey or config (default `domcontentloaded`)                                                                                    |
+| `click`           | `selector`, `timeoutMs?`, `retries?`                | Optional Playwright timeout; `retries` re-attempts after failure (default 0)                                                                                |
+| `fill`            | `selector`, `value`, `timeoutMs?`, `retries?`       | Same timeout/retry options as `click`                                                                                                                       |
+| `wait`            | `timeoutMs`                                         | Fixed sleep — prefer `waitForEvent` / `waitForSelector` when possible                                                                                       |
+| `waitForSelector` | `selector`, `timeoutMs?`, `state?`                  | Default state `visible`                                                                                                                                     |
+| `waitForAny`      | `selectors` (min 2), `timeoutMs?`                   | Wait until **any** selector is visible (UI fork detection)                                                                                                  |
+| `waitForHydrated` | `selector`, `timeoutMs?` (default 15000)            | Wait until React has attached handlers to the element. Use before interacting with server-rendered forms — see below                                        |
+| `waitForURL`      | `url`, `timeoutMs?`                                 | Glob/string as Playwright                                                                                                                                   |
+| `waitForEvent`    | `eventName`, `timeoutMs?`, `properties?`, `fields?` | Poll captured analytics; ignores events from before the previous step started (so beacons during `goto`/`click` still count)                                |
+| `scroll`          | `selector?`, `timeoutMs?`                           | Omit selector to scroll the page; with a selector, scrolls inside overflow containers or brings the element into view. Recorder captures scroll (debounced) |
 
 Every step may include optional `when.visible: "<selector>"`. The runner waits briefly (~500ms) for that selector to become visible; if it does not, the step is **skipped** (no error) and logged in the report step log. Use with `waitForAny` for opt-in branching in one journey; omit both for a strictly linear journey (separate files per branch remain fine).
 
@@ -226,16 +230,16 @@ npm run track -- generate plans/demo.csv --name=checkout '--out=journeys/checkou
 
 Canonical CSV columns:
 
-| Column | Required | Meaning |
-|--------|----------|---------|
-| `eventName` | yes | Event to wait for / expect |
-| `trigger` | yes | `page_load`, `click`, `fill`, or `scroll` |
-| `path` | for `page_load` | Page path for `goto` |
-| `selector` | no | CSS selector; defaults to `#TODO-<event-slug>` for click/fill |
-| `value` | for `fill` | Input value |
-| `properties` | no | JSON object — match against event payload only |
-| `fields` | no | JSON object — match against flattened payload + contexts |
-| `notes` | no | Becomes a YAML comment above that step |
+| Column       | Required        | Meaning                                                       |
+| ------------ | --------------- | ------------------------------------------------------------- |
+| `eventName`  | yes             | Event to wait for / expect                                    |
+| `trigger`    | yes             | `page_load`, `click`, `fill`, or `scroll`                     |
+| `path`       | for `page_load` | Page path for `goto`                                          |
+| `selector`   | no              | CSS selector; defaults to `#TODO-<event-slug>` for click/fill |
+| `value`      | for `fill`      | Input value                                                   |
+| `properties` | no              | JSON object — match against event payload only                |
+| `fields`     | no              | JSON object — match against flattened payload + contexts      |
+| `notes`      | no              | Becomes a YAML comment above that step                        |
 
 Example (`plans/demo.csv`):
 
@@ -268,18 +272,18 @@ const result = await runJourney(
 
 ## Journey options
 
-| Option | Default | Meaning |
-|--------|---------|---------|
-| `ordered` | `false` | Require expected events in order |
-| `match` | `partial` | `partial` (subset) or `exact` for **properties** only |
-| `forbidExtra` | `false` | Fail if unexpected events were captured |
+| Option        | Default   | Meaning                                               |
+| ------------- | --------- | ----------------------------------------------------- |
+| `ordered`     | `false`   | Require expected events in order                      |
+| `match`       | `partial` | `partial` (subset) or `exact` for **properties** only |
+| `forbidExtra` | `false`   | Fail if unexpected events were captured               |
 
 ## Properties vs fields
 
-| Expect key | Matches | Typical use |
-|------------|---------|-------------|
-| `properties` | Event payload only | Page, element, counts on the self-describing event |
-| `fields` | Payload + Snowplow contexts (flattened) | Entity IDs / values that may arrive in `cx` |
+| Expect key   | Matches                                 | Typical use                                        |
+| ------------ | --------------------------------------- | -------------------------------------------------- |
+| `properties` | Event payload only                      | Page, element, counts on the self-describing event |
+| `fields`     | Payload + Snowplow contexts (flattened) | Entity IDs / values that may arrive in `cx`        |
 
 Snowplow `fields` flattening: start from the event payload; for each context, merge each `data` key if absent (payload wins on collision); always also add a schema-qualified key `{context_schema_name}.{property}` derived from the Iglu entity name. Prefer bare keys when uniqueness is clear; use the qualified form when the same property name appears on the payload or across contexts.
 
